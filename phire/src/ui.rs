@@ -365,7 +365,7 @@ impl DRectButton {
     }
 }
 
-pub struct Slider {
+pub struct SliderFloat {
     range: Range<f32>,
     step: f32,
 
@@ -377,7 +377,7 @@ pub struct Slider {
     pos: f32,
 }
 
-impl Slider {
+impl SliderFloat {
     const RADIUS: f32 = 0.028;
     const THRESHOLD: f32 = 0.05;
 
@@ -500,6 +500,140 @@ impl Slider {
         ui.fill_circle(pos.0, pos.1, Self::RADIUS, c);
     }
 }
+
+pub struct SliderInt {
+    range: Range<usize>,
+    step: usize,
+
+    btn_dec: DRectButton,
+    btn_inc: DRectButton,
+
+    touch: Option<(u64, f32, bool)>,
+    rect: Rect,
+    pos: f32,
+}
+
+impl SliderInt {
+    const RADIUS: f32 = 0.028;
+    const THRESHOLD: f32 = 0.05;
+
+    pub fn new(range: Range<usize>, step: usize) -> Self {
+        Self {
+            range,
+            step,
+
+            btn_dec: DRectButton::new().with_delta(-0.002),
+            btn_inc: DRectButton::new().with_delta(-0.002),
+
+            touch: None,
+            rect: Rect::default(),
+            pos: f32::INFINITY,
+        }
+    }
+
+    pub fn touch(&mut self, touch: &Touch, t: f32, dst: &mut usize) -> Option<bool> {
+        if self.btn_dec.touch(touch, t) {
+            *dst = (*dst - self.step).max(self.range.start);
+            return Some(true);
+        }
+        if self.btn_inc.touch(touch, t) {
+            *dst = (*dst + self.step).min(self.range.end);
+            return Some(true);
+        }
+        if let Some((id, start_pos, unlocked)) = &mut self.touch {
+            if touch.id == *id {
+                match touch.phase {
+                    TouchPhase::Started | TouchPhase::Moved | TouchPhase::Stationary => {
+                        if (touch.position.x - *start_pos).abs() >= Self::THRESHOLD {
+                            *unlocked = true;
+                        }
+                        if *unlocked {
+                            let p = (touch.position.x - self.rect.x) / self.rect.w;
+                            let p = p.clamp(0., 1.);
+                            let p = self.range.start as f32 + (self.range.end - self.range.start) as f32 * p;
+                            *dst = p as usize;
+                            return Some(true);
+                        }
+                    }
+                    TouchPhase::Cancelled | TouchPhase::Ended => {
+                        self.touch = None;
+                    }
+                }
+                return Some(false);
+            }
+        } else if touch.phase == TouchPhase::Started {
+            let pos = (self.pos, self.rect.center().y);
+            if (touch.position.x - pos.0).hypot(touch.position.y - pos.1) <= Self::RADIUS {
+                self.touch = Some((touch.id, touch.position.x, false));
+                return Some(false);
+            }
+        }
+        None
+    }
+
+    pub fn render(&mut self, ui: &mut Ui, mut r: Rect, t: f32, c: Color, p: usize, text: String) {
+        r.x -= 0.1;
+        r.x -= r.w * 0.2;
+        r.w *= 1.2;
+        let pad = 0.04;
+        let size = 0.026;
+        let cy = r.center().y;
+        self.btn_dec
+            .render_text(ui, Rect::new(r.x - pad - size, cy, 0., 0.).feather(size), t, c.a, "-", 0.7, true);
+        self.btn_inc
+            .render_text(ui, Rect::new(r.right() + pad + size, cy, 0., 0.).feather(size), t, c.a, "+", 0.7, true);
+        self.rect = ui.rect_to_global(r);
+        ui.text(text)
+            .pos(r.x - (pad + size) * 2., cy)
+            .anchor(1., 0.5)
+            .no_baseline()
+            .color(c)
+            .size(0.6)
+            .draw();
+        let p = (p as f32 - self.range.start as f32) / (self.range.end - self.range.start) as f32;
+        let pos = (r.x + r.w * p, cy);
+        self.pos = ui.to_global(pos).0;
+        use lyon::math::point;
+        ui.stroke_options = ui.stroke_options.with_line_cap(LineCap::Round);
+        ui.stroke_path(
+            &{
+                let mut p = Path::builder();
+                p.begin(point(r.x, cy));
+                p.line_to(point(pos.0, cy));
+                p.end(false);
+                p.build()
+            },
+            0.02,
+            Color {
+                a: c.a * 0.8,
+                ..ui.background()
+            },
+        );
+        ui.stroke_path(
+            &{
+                let mut p = Path::builder();
+                p.begin(point(pos.0, cy));
+                p.line_to(point(r.right(), cy));
+                p.end(false);
+                p.build()
+            },
+            0.02,
+            Color { a: c.a * 0.8, ..c },
+        );
+        ui.stroke_options = ui.stroke_options.with_line_cap(LineCap::Square);
+        rounded_rect_shadow(
+            ui,
+            Rect::new(pos.0, pos.1, 0., 0.).feather(Self::RADIUS),
+            &ShadowConfig {
+                radius: Self::RADIUS,
+                base: 0.7 * c.a,
+                ..Default::default()
+            },
+        );
+        ui.fill_circle(pos.0, pos.1, Self::RADIUS, c);
+    }
+}
+
 
 thread_local! {
     static STATE: RefCell<HashMap<String, Option<u64>>> = RefCell::new(HashMap::new());

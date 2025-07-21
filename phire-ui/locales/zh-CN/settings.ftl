@@ -32,6 +32,8 @@ item-cali = 调整延迟
 item-exclusive-audio = 独占音频 (仅 Android)
 item-exclusive-audio-sub = 尝试独占输出设备，可以降低音频延时，但会导致声音无法被录制
 item-audio-compatibility = 音频兼容模式 (仅 Android)
+item-sfx-audio-buffer = 音效缓冲区大小
+item-sfx-audio-buffer-sub = 最大同时播放的音效数量
 
 item-show-acc = 显示实时准度
 item-dc-pause = 双击暂停

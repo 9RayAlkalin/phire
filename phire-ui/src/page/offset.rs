@@ -9,7 +9,7 @@ use phire::{
     core::ResourcePack,
     ext::{create_audio_manger, get_latency, push_frame_time, screen_aspect, semi_black, RectExt},
     time::TimeManager,
-    ui::{Slider, Ui}
+    ui::{SliderFloat, Ui}
 };
 use sasa::{AudioClip, AudioManager, Music, MusicParams, PlaySfxParams, Sfx};
 
@@ -21,7 +21,7 @@ pub struct OffsetPage {
     tm: TimeManager,
     color: Color,
 
-    slider: Slider,
+    slider: SliderFloat,
 
     touched: bool,
     touch: Option<(f32, f32)>,
@@ -63,7 +63,7 @@ impl OffsetPage {
             tm,
             color: respack.info.fx_perfect(),
 
-            slider: Slider::new(-200.0..800.0, 1.),
+            slider: SliderFloat::new(-200.0..800.0, 1.),
 
             touched: false,
             touch: None,

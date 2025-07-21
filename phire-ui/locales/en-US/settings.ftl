@@ -32,6 +32,8 @@ item-cali = Adjust offset
 item-exclusive-audio = Exclusive Audio (Only Android)
 item-exclusive-audio-sub = Use exclusive access to reduce latency, but may prevent the sound from being recorded
 item-audio-compatibility = Audio Compatibility Mode (Only Android)
+item-sfx-audio-buffer = Sound effect audio buffer
+item-sfx-audio-buffer-sub = Max Simultaneous Sound effect Playback
 
 item-show-acc = Show real-time accuracy
 item-dc-pause = Double tap to pause

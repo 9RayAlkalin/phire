@@ -8,7 +8,7 @@ use phire::{
     ext::{poll_future, semi_black, validate_combo, LocalTask, RectExt, SafeTexture, ScaleType},
     l10n::{LanguageIdentifier, LANG_IDENTS, LANG_NAMES},
     scene::{request_input, return_input, show_error, show_message, take_input},
-    ui::{DRectButton, Scroll, Slider, Ui},
+    ui::{DRectButton, Scroll, SliderFloat, SliderInt, Ui},
 };
 use std::{borrow::Cow, net::ToSocketAddrs, sync::atomic::Ordering};
 
@@ -413,11 +413,12 @@ impl GeneralList {
 
 struct AudioList {
     adjust_btn: DRectButton,
-    music_slider: Slider,
-    sfx_slider: Slider,
-    bgm_slider: Slider,
+    music_slider: SliderFloat,
+    sfx_slider: SliderFloat,
+    bgm_slider: SliderFloat,
     cali_btn: DRectButton,
     audio_compatibility_btn: DRectButton,
+    sfx_audio_buffer: SliderInt,
 
     cali_task: LocalTask<Result<OffsetPage>>,
     next_page: Option<NextPage>,
@@ -427,11 +428,12 @@ impl AudioList {
     pub fn new() -> Self {
         Self {
             adjust_btn: DRectButton::new(),
-            music_slider: Slider::new(0.0..2.0, 0.05),
-            sfx_slider: Slider::new(0.0..2.0, 0.05),
-            bgm_slider: Slider::new(0.0..2.0, 0.05),
+            music_slider: SliderFloat::new(0.0..2.0, 0.05),
+            sfx_slider: SliderFloat::new(0.0..2.0, 0.05),
+            bgm_slider: SliderFloat::new(0.0..2.0, 0.05),
             cali_btn: DRectButton::new(),
             audio_compatibility_btn: DRectButton::new(),
+            sfx_audio_buffer: SliderInt::new(5..1024, 1),
 
             cali_task: None,
             next_page: None,
@@ -469,6 +471,9 @@ impl AudioList {
         if self.audio_compatibility_btn.touch(touch, t) {
             config.audio_compatibility ^= true;
             return Ok(Some(true));
+        }
+        if let wt @ Some(_) = self.sfx_audio_buffer.touch(touch, t, &mut config.sfx_buffer_size) {
+            return Ok(wt);
         }
         Ok(None)
     }
@@ -526,6 +531,10 @@ impl AudioList {
             render_title(ui, c, tl!("item-audio-compatibility"), None);
             render_switch(ui, rr, t, c, &mut self.audio_compatibility_btn, config.audio_compatibility);
         }
+        item! {
+            render_title(ui, c, tl!("item-sfx-audio-buffer"), None);
+            self.sfx_audio_buffer.render(ui, rr, t, c, config.sfx_buffer_size, format!("{}", config.sfx_buffer_size));
+        }
         (w, h)
     }
 
@@ -539,8 +548,8 @@ struct ChartList {
     dc_pause_btn: DRectButton,
     dhint_btn: DRectButton,
     opt_btn: DRectButton,
-    speed_slider: Slider,
-    size_slider: Slider,
+    speed_slider: SliderFloat,
+    size_slider: SliderFloat,
     render_extra_btn: DRectButton,
 }
 
@@ -551,8 +560,8 @@ impl ChartList {
             dc_pause_btn: DRectButton::new(),
             dhint_btn: DRectButton::new(),
             opt_btn: DRectButton::new(),
-            speed_slider: Slider::new(0.1..2.0, 0.05),
-            size_slider: Slider::new(0.0..5.0, 0.005),
+            speed_slider: SliderFloat::new(0.1..2.0, 0.05),
+            size_slider: SliderFloat::new(0.0..5.0, 0.005),
             render_extra_btn: DRectButton::new(),
         }
     }
@@ -644,11 +653,11 @@ impl ChartList {
 }
 
 struct OtherList {
-    chart_debug_line_slider: Slider,
-    chart_debug_note_slider: Slider,
+    chart_debug_line_slider: SliderFloat,
+    chart_debug_note_slider: SliderFloat,
     touch_debug_btn: DRectButton,
-    chart_ratio_slider: Slider,
-    fade_slider: Slider,
+    chart_ratio_slider: SliderFloat,
+    fade_slider: SliderFloat,
     watermark: DRectButton,
     combo_btn: DRectButton,
     roman_btn: DRectButton,
@@ -660,11 +669,11 @@ struct OtherList {
 impl OtherList {
     pub fn new() -> Self {
         Self {
-            chart_debug_line_slider: Slider::new(0.0..1.0, 0.05),
-            chart_debug_note_slider: Slider::new(0.0..1.0, 0.05),
+            chart_debug_line_slider: SliderFloat::new(0.0..1.0, 0.05),
+            chart_debug_note_slider: SliderFloat::new(0.0..1.0, 0.05),
             touch_debug_btn: DRectButton::new(),
-            chart_ratio_slider: Slider::new(0.05..1.0, 0.05),
-            fade_slider: Slider::new(-2.0..2.0, 0.05),
+            chart_ratio_slider: SliderFloat::new(0.05..1.0, 0.05),
+            fade_slider: SliderFloat::new(-2.0..2.0, 0.05),
             watermark: DRectButton::new(),
             combo_btn: DRectButton::new(),
             roman_btn: DRectButton::new(),

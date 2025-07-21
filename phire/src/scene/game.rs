@@ -11,7 +11,7 @@ use super::{
     request_input, return_input, show_message, take_input, EndingScene, NextScene, Scene,
 };
 use crate::{
-    bin::{BinaryReader, BinaryWriter}, config::{Config, Mods}, core::{copy_fbo, BadNote, Chart, ChartExtra, Effect, Matrix, Point, Resource, UIElement, Vector, BUFFER_SIZE}, ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture}, fs::FileSystem, gyro::{Gyro, GYRO, GYROSCOPE_DATA}, info::{ChartFormat, ChartInfo}, judge::Judge, parse::{parse_extra, parse_pec, parse_phigros, parse_rpe}, task::Task, time::TimeManager, ui::{RectButton, Ui}
+    bin::{BinaryReader, BinaryWriter}, config::{Config, Mods}, core::{copy_fbo, BadNote, Chart, ChartExtra, Effect, Matrix, Point, Resource, UIElement, Vector}, ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture}, fs::FileSystem, gyro::{Gyro, GYRO, GYROSCOPE_DATA}, info::{ChartFormat, ChartInfo}, judge::Judge, parse::{parse_extra, parse_pec, parse_phigros, parse_rpe}, task::Task, time::TimeManager, ui::{RectButton, Ui}
 };
 use anyhow::{bail, Context, Result};
 use concat_string::concat_string;
@@ -376,7 +376,7 @@ impl GameScene {
 
         let info_offset = info.offset;
         let mut res = Resource::new(
-            config,
+            config.clone(),
             chart_format,
             info,
             fs,
@@ -391,7 +391,7 @@ impl GameScene {
         
         // Prepare extra sfx from chart.hitsounds
         chart.hitsounds.drain().for_each(|(name, clip)| {
-            if let Ok(clip) = res.audio.create_sfx(clip, Some(BUFFER_SIZE)) {
+            if let Ok(clip) = res.audio.create_sfx(clip, Some(config.sfx_buffer_size)) {
                 res.extra_sfxs.insert(name, clip);
             }
         });
