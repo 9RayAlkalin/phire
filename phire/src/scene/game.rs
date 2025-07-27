@@ -131,7 +131,6 @@ pub struct GameScene {
     pub judge: Judge,
     pub gl: InternalGlContext<'static>,
     player: Option<BasicPlayer>,
-    chart_bytes: Vec<u8>,
     info_offset: f32,
     effects: Vec<Effect>,
 
@@ -315,7 +314,7 @@ impl GameScene {
     }
     
 
-    pub async fn load_chart(fs: &mut dyn FileSystem, info: &ChartInfo, config: &Config) -> Result<(Chart, Vec<u8>, ChartFormat)> {
+    pub async fn load_chart(fs: &mut dyn FileSystem, info: &ChartInfo, config: &Config) -> Result<(Chart, ChartFormat)> {
         let extra = if config.render_extra {
             if let Some(extra) = fs.load_file("extra.json").await.ok().map(String::from_utf8).transpose()? {
                 parse_extra(&extra, fs).await.context("Failed to parse extra")?
@@ -348,16 +347,17 @@ impl GameScene {
             ChartFormat::Pgr => parse_phigros(&String::from_utf8_lossy(&bytes), extra),
             ChartFormat::Pec => parse_pec(&String::from_utf8_lossy(&bytes), extra),
             ChartFormat::Pbc => {
-                let mut r = BinaryReader::new(Cursor::new(&bytes));
+                let mut r = BinaryReader::new(Cursor::new(bytes));
                 r.read()
             }
         }?;
         chart.load_textures(fs).await?;
         chart.settings.hold_partial_cover = info.hold_partial_cover;
-        Ok((chart, bytes, format))
+        Ok((chart, format))
     }
 
     pub async fn new(
+        preload_chart: Option<(Chart, ChartFormat)>,
         mode: GameMode,
         info: ChartInfo,
         mut config: Config,
@@ -376,7 +376,11 @@ impl GameScene {
             }
             _ => {}
         }
-        let (mut chart, chart_bytes, chart_format) = Self::load_chart(fs.deref_mut(), &info, &config).await?;
+        let (mut chart, chart_format) = if let Some((chart, chart_format)) = preload_chart {
+            (chart, chart_format)
+        } else {
+            Self::load_chart(fs.deref_mut(), &info, &config).await?
+        };
         let effects = std::mem::take(&mut chart.extra.global_effects);
         if config.fxaa {
             chart
@@ -420,7 +424,6 @@ impl GameScene {
             judge,
             gl: unsafe { get_internal_gl() },
             player,
-            chart_bytes,
             effects,
             info_offset,
 

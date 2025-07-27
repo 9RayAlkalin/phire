@@ -1,10 +1,10 @@
 use super::{draw_background, ending::RecordUpdateState, game::GameMode, GameScene, NextScene, Scene};
 use crate::{
     config::Config,
-    core::Resource,
+    core::{Chart, Resource},
     ext::{draw_illustration, draw_parallelogram, draw_text_aligned, draw_text_aligned_fix, poll_future, LocalTask, SafeTexture, BLACK_TEXTURE},
     fs::FileSystem,
-    info::ChartInfo,
+    info::{ChartFormat, ChartInfo},
     judge::Judge,
     task::Task,
     time::TimeManager,
@@ -46,6 +46,7 @@ impl LoadingScene {
     pub const TOTAL_TIME: f32 = BEFORE_TIME + TRANSITION_TIME + WAIT_TIME;
 
     pub async fn new(
+        preload_chart: Option<(Chart, ChartFormat)>,
         mode: GameMode,
         mut info: ChartInfo,
         config: &Config,
@@ -100,7 +101,7 @@ impl LoadingScene {
 
             info.tip = Some(tips.choose(&mut thread_rng()).unwrap().to_owned());
         }
-        let future = Box::pin(GameScene::new(mode, info.clone(), config.clone(), fs, player, background.clone(), illustration.clone(), upload_fn, update_fn));
+        let future = Box::pin(GameScene::new(preload_chart, mode, info.clone(), config.clone(), fs, player, background.clone(), illustration.clone(), upload_fn, update_fn));
         let charter = Regex::new(r"\[!:[0-9]+:([^:]*)\]").unwrap().replace_all(&info.charter, "$1").to_string();
 
         Ok(Self {
