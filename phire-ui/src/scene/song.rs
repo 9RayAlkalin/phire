@@ -299,7 +299,7 @@ impl SongScene {
                 task: Some(Task::new({
                     async move {
                         let chart = Ptr::<Chart>::new(id).load().await?;
-                        let image = chart.illustration.load_image().await?;
+                        let image = crate::client::File::new(chart.song.illustration.clone()).load_image().await?;
                         Ok((image, None))
                     }
                 })),
@@ -347,7 +347,7 @@ impl SongScene {
                         )
                     } else {
                         let chart = Ptr::<Chart>::new(id.unwrap()).fetch().await?;
-                        with_effects(AudioClip::decode(chart.preview.fetch().await?.to_vec())?, None)
+                        with_effects(AudioClip::decode(crate::client::File::new(chart.song.file.clone()).fetch().await?.to_vec())?, None)
                     }
                 }
             })),
@@ -421,7 +421,7 @@ impl SongScene {
                         struct Resp {
                             score: i16,
                         }
-                        let resp: Resp = recv_raw(Client::get(format!("/chart/{id}/rate"))).await?.json().await?;
+                        let resp: Resp = recv_raw(Client::get(format!("/charts/{id}/rate"))).await?.json().await?;
                         Ok(resp.score)
                     })
                 })
@@ -499,22 +499,25 @@ impl SongScene {
                     }
 
                     *status.lock().unwrap() = tl!("dl-status-chart");
-                    let mut bytes = Vec::new();
-                    download(Cursor::new(&mut bytes), &entity.file.url, &prog_wk).await?;
-                    *status.lock().unwrap() = tl!("dl-status-extract");
-                    if prog_wk.strong_count() != 0 {
-                        unzip_into(Cursor::new(bytes), &dir, false)?;
+                    for i in [&entity.file, &entity.song.file, &entity.song.illustration] {
+                        let mut bytes = Vec::new();
+                        download(Cursor::new(&mut bytes), i, &prog_wk).await?;
+                        *status.lock().unwrap() = tl!("dl-status-extract");
+                        if prog_wk.strong_count() != 0 {
+                            // unzip_into(Cursor::new(bytes), &dir, false)?;
+                            std::fs::write(&mut dir.join("chart.json")?, &bytes)?;
+                        }
                     }
                     *status.lock().unwrap() = tl!("dl-status-saving");
                     if let Some(prog) = prog_wk.upgrade() {
                         *prog.lock().unwrap() = None;
                     }
                     let mut info: ChartInfo = serde_yaml::from_reader(dir.open("info.yml")?)?;
-                    info.id = Some(entity.id);
-                    info.created = Some(entity.created);
-                    info.updated = Some(entity.updated);
-                    info.chart_updated = Some(entity.chart_updated);
-                    info.uploader = Some(entity.uploader.id);
+                    info.id = None;
+                    info.created = None;
+                    info.updated = None;
+                    info.chart_updated = None;
+                    info.uploader = None;
                     serde_yaml::to_writer(dir.create("info.yml")?, &info)?;
 
                     if prog_wk.strong_count() == 0 {
@@ -597,38 +600,6 @@ impl SongScene {
         if self.local_path.is_some() {
             self.menu_options.push("exercise");
             self.menu_options.push("offset");
-        }
-        let perms = get_data().me.as_ref().map(|it| it.perms()).unwrap_or_default();
-        let is_uploader = get_data()
-            .me
-            .as_ref()
-            .map_or(false, |it| Some(it.id) == self.info.uploader.as_ref().map(|it| it.id));
-        if self.info.id.is_some() && perms.contains(Permissions::REVIEW) {
-            if self.entity.as_ref().map_or(false, |it| !it.reviewed && !it.stable_request) {
-                self.menu_options.push("review-approve");
-                self.menu_options.push("review-deny");
-            }
-            self.menu_options.push("review-edit-tags");
-        }
-        if self.info.id.is_some() && is_uploader && self.entity.as_ref().map_or(false, |it| !it.stable && !it.stable_request) {
-            self.menu_options.push("stabilize");
-        }
-        if self.info.id.is_some() && self.entity.as_ref().map_or(false, |it| it.stable_request) && perms.contains(Permissions::STABILIZE_CHART) {
-            self.menu_options.push("stabilize-approve");
-            self.menu_options.push("stabilize-approve-ranked");
-            self.menu_options.push("stabilize-comment");
-            self.menu_options.push("stabilize-deny");
-        }
-        if self.info.id.is_some()
-            && self.entity.as_ref().map_or(false, |it| {
-                if it.stable {
-                    perms.contains(Permissions::DELETE_STABLE)
-                } else {
-                    is_uploader || perms.contains(Permissions::DELETE_UNSTABLE)
-                }
-            })
-        {
-            self.menu_options.push("review-del");
         }
         self.menu.set_options(self.menu_options.iter().map(|it| tl!(it).into_owned()).collect());
     }
@@ -982,21 +953,13 @@ impl SongScene {
             item(tl!("info-difficulty"), format!("{} ({:.1})", self.info.level, self.info.difficulty).into());
             item(tl!("info-desc"), self.info.intro.as_str().into());
             if let Some(entity) = &self.entity {
-                item(tl!("info-rating"), entity.rating.map_or(Cow::Borrowed("NaN"), |r| format!("{:.2} / 5.00", r * 5.).into()));
+                item(tl!("info-rating"), entity.rating.to_string().into());
                 item(
                     tl!("info-type"),
                     format!(
-                        "{}{}",
-                        if entity.reviewed { tl!("reviewed") } else { tl!("unreviewed") },
-                        match (entity.stable, entity.ranked) {
-                            (true, true) => ttl!("chart-ranked"),
-                            (true, false) => ttl!("chart-special"),
-                            (false, _) => ttl!("chart-unstable"),
-                        }
-                    )
+                        "")
                     .into(),
                 );
-                item(tl!("info-tags"), entity.tags.iter().map(|it| format!("#{it}")).join(" ").into());
             }
             if let Some(id) = self.info.id {
                 item("ID".into(), id.to_string().into());
@@ -1365,10 +1328,9 @@ impl Scene for SongScene {
                 self.info_edit.as_mut().unwrap().info.tags = tags;
             } else {
                 let id = self.info.id.unwrap();
-                self.entity.as_mut().unwrap().tags = tags.clone();
                 self.edit_tags_task = Some(Task::new(async move {
                     recv_raw(Client::post(
-                        format!("/chart/{id}/edit-tags"),
+                        format!("/charts/{id}/edit-tags"),
                         &json!({
                             "tags": tags,
                         }),
@@ -1383,7 +1345,7 @@ impl Scene for SongScene {
                 let score = self.rate_dialog.rate.score;
                 self.rate_task = Some(Task::new(async move {
                     recv_raw(Client::post(
-                        format!("/chart/{id}/rate"),
+                        format!("/charts/{id}/rate"),
                         &json!({
                             "score": score,
                         }),
@@ -1403,29 +1365,7 @@ impl Scene for SongScene {
                         show_error(err.context(tl!("load-charts-failed")));
                     }
                     Ok(chart) => {
-                        if let Some(chart) = chart {
-                            self.entity = Some(chart.as_ref().clone());
-                            if self
-                                .info
-                                .updated
-                                .map_or(chart.updated != chart.created, |local_updated| local_updated != chart.updated)
-                                && self.local_path.is_some()
-                            {
-                                let chart_updated = self
-                                    .info
-                                    .chart_updated
-                                    .map_or(chart.chart_updated != chart.created, |local_updated| local_updated != chart.chart_updated);
-                                confirm_dialog(
-                                    tl!("need-update"),
-                                    if chart_updated {
-                                        tl!("need-update-content")
-                                    } else {
-                                        tl!("need-update-info-only-content")
-                                    },
-                                    Arc::clone(&self.should_update),
-                                );
-                            }
-                        } else if let Some(local) = &self.local_path {
+                        if let Some(local) = &self.local_path {
                             let conf = format!("{}/{}/info.yml", dir::charts()?, local);
                             let mut info: ChartInfo = serde_yaml::from_reader(File::open(&conf)?)?;
                             info.id = None;
@@ -1520,7 +1460,7 @@ impl Scene for SongScene {
                             passed: bool,
                         }
                         let resp: Resp = recv_raw(Client::post(
-                            format!("/chart/{id}/review"),
+                            format!("/charts/{id}/review"),
                             &json!({
                                 "approve": true
                             }),
@@ -1542,7 +1482,6 @@ impl Scene for SongScene {
                         show_message(tl!("review-not-loaded")).warn();
                         return Ok(());
                     };
-                    self.tags.set(entity.tags.clone());
                     self.tags.enter(tm.real_time() as _);
                 }
                 "stabilize" => {
@@ -1553,7 +1492,7 @@ impl Scene for SongScene {
                     let id = self.info.id.unwrap();
                     self.review_task = Some(Task::new(async move {
                         let resp: StableR = recv_raw(Client::post(
-                            format!("/chart/{id}/stabilize"),
+                            format!("/charts/{id}/stabilize"),
                             &json!({
                                 "kind": kind,
                             }),
@@ -1584,14 +1523,14 @@ impl Scene for SongScene {
         if self.chart_should_delete.fetch_and(false, Ordering::Relaxed) {
             let id = self.info.id.unwrap();
             self.review_task = Some(Task::new(async move {
-                recv_raw(Client::delete(format!("/chart/{id}"))).await?;
+                recv_raw(Client::delete(format!("/charts/{id}"))).await?;
                 Ok(tl!("review-deleted").into_owned())
             }));
         }
         if self.should_stabilize.fetch_and(false, Ordering::Relaxed) {
             let id = self.info.id.unwrap();
             self.stabilize_task = Some(Task::new(async move {
-                recv_raw(Client::post(format!("/chart/{id}/req-stabilize"), &())).await?;
+                recv_raw(Client::post(format!("/charts/{id}/req-stabilize"), &())).await?;
                 Ok(())
             }));
         }
@@ -1687,7 +1626,7 @@ impl Scene for SongScene {
                         updated: DateTime<Utc>,
                         chart_updated: DateTime<Utc>,
                     }
-                    let resp: Resp = recv_raw(Client::request(Method::PATCH, format!("/chart/{id}")).json(&json!({
+                    let resp: Resp = recv_raw(Client::request(Method::PATCH, format!("/charts/{id}")).json(&json!({
                         "file": file,
                         "created": info.created.unwrap(),
                     })))
@@ -1707,7 +1646,7 @@ impl Scene for SongScene {
                         created: DateTime<Utc>,
                     }
                     let resp: Resp = recv_raw(Client::post(
-                        "/chart/upload",
+                        "/charts/upload",
                         &json!({
                             "file": file,
                         }),
@@ -1754,7 +1693,7 @@ impl Scene for SongScene {
                     let id = self.info.id.unwrap();
                     self.review_task = Some(Task::new(async move {
                         recv_raw(Client::post(
-                            format!("/chart/{id}/review"),
+                            format!("/charts/{id}/review"),
                             &json!({
                                 "approve": false,
                                 "reason": text,
@@ -1768,7 +1707,7 @@ impl Scene for SongScene {
                     let id = self.info.id.unwrap();
                     self.review_task = Some(Task::new(async move {
                         recv_raw(Client::post(
-                            format!("/chart/{id}/stabilize-comment"),
+                            format!("/charts/{id}/stabilize-comment"),
                             &json!({
                                 "comment": text,
                             }),
@@ -1781,7 +1720,7 @@ impl Scene for SongScene {
                     let id = self.info.id.unwrap();
                     self.review_task = Some(Task::new(async move {
                         let resp: StableR = recv_raw(Client::post(
-                            format!("/chart/{id}/stabilize"),
+                            format!("/charts/{id}/stabilize"),
                             &json!({
                                 "kind": -1,
                                 "reason": text,
@@ -2021,8 +1960,8 @@ impl Scene for SongScene {
             ui.scope(|ui| {
                 ui.dx(lf);
                 ui.dy(-ui.top);
-                let r = Rect::new(-0.2, 0., 0.2 + w, ui.top * 2.);
-                ui.fill_rect(r, (Color::default(), (r.x, r.y), Color::new(0., 0., 0., p * 0.7), (r.right(), r.y)));
+                // let r = Rect::new(-0.2, 0., 0.2 + w, ui.top * 2.);
+                // ui.fill_rect(r, (Color::default(), (r.x, r.y), Color::new(0., 0., 0., p * 0.7), (r.right(), r.y)));
 
                 match self.side_content {
                     SideContent::Edit => self.side_chart_info(ui, rt),

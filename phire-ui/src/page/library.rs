@@ -149,10 +149,10 @@ impl LibraryPage {
             show_message(tl!("offline-mode")).error();
             return;
         }
-        if get_data().me.is_none() {
-            show_error(anyhow!(tl!("must-login")));
-            return;
-        }
+        // if get_data().me.is_none() {
+        //     show_error(anyhow!(tl!("must-login")));
+        //     return;
+        // }
         self.charts_view.reset_scroll();
         self.charts_view.clear();
         let page = self.current_page;
@@ -202,7 +202,7 @@ impl LibraryPage {
             if popular {
                 q = q.suffix("/popular");
             } else {
-                q = q.search(search).order(order).tags(tags).query("rating", rating_range);
+                q = q.search(search).order(order); // .tags(tags).query("RangeRating", rating_range)
             }
             if let Some(me) = by_me {
                 q = q.query("uploader", me.to_string());

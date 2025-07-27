@@ -511,14 +511,7 @@ impl MPPanel {
                     Ok(entity) => {
                         let path = format!("download/{}", entity.id);
                         let info_path = format!("{}/{path}/info.yml", dir::charts()?);
-                        let should_download = if Path::new(&info_path).exists() {
-                            let local_info: ChartInfo = serde_yaml::from_reader(File::open(info_path)?)?;
-                            local_info
-                                .updated
-                                .map_or(entity.updated != entity.created, |local_updated| local_updated != entity.updated)
-                        } else {
-                            true
-                        };
+                        let should_download = true;
                         if should_download {
                             let info = entity.to_info();
                             self.downloading = Some(SongScene::global_start_download(info, Chart::clone(&entity), {

@@ -178,6 +178,10 @@ pub struct File {
     pub url: String,
 }
 impl File {
+    pub fn new(url: String) -> Self {
+        Self { url }
+    }
+
     fn request(&self) -> reqwest::RequestBuilder {
         let req = basic_client_builder().build().unwrap().get(&self.url);
         if let Some(token) = CLIENT_TOKEN.load().as_ref() {

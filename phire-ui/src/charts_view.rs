@@ -56,7 +56,7 @@ impl ChartDisplayItem {
                         texture: (BLACK_TEXTURE.clone(), BLACK_TEXTURE.clone()),
                         notify: Arc::clone(&notify),
                         task: Some(Task::new({
-                            let illu = chart.illustration.clone();
+                            let illu = crate::client::File::new(chart.song.illustration.clone());
                             async move {
                                 notify.notified().await;
                                 Ok((illu.load_thumbnail().await?, None))
@@ -68,13 +68,7 @@ impl ChartDisplayItem {
                 },
                 local_path: None,
             },
-            if chart.stable_request {
-                Some('+')
-            } else if !chart.reviewed {
-                Some('*')
-            } else {
-                None
-            },
+            None,
         )
     }
 }

@@ -107,7 +107,7 @@ impl ProfileScene {
                                 task: Some(Task::new({
                                     async move {
                                         notify.notified().await;
-                                        let illu = &chart.fetch().await?.illustration;
+                                        let illu = crate::client::File::new(chart.fetch().await?.song.illustration.clone());
                                         Ok((illu.load_thumbnail().await?, None))
                                     }
                                 })),
@@ -118,7 +118,7 @@ impl ProfileScene {
                         let chart = it.chart.clone();
                         RecordItem {
                             record: it,
-                            name: Task::new(async move { Ok(chart.fetch().await?.name.clone()) }),
+                            name: Task::new(async move { Ok(chart.fetch().await?.song.title.clone()) }),
                             btn: DRectButton::new(),
                             illu,
                         }
