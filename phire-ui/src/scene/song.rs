@@ -775,6 +775,7 @@ impl SongScene {
             let chart_updated = info.chart_updated;
             config.mods = mods;
             LoadingScene::new(
+                None,
                 mode,
                 info,
                 &config,
