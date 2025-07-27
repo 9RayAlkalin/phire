@@ -1,6 +1,8 @@
 name: "air light Z"
 author: 星鹿ELEC
-description: 打击音效 - 小赵  结算音乐 - StarN_Woolf
+description: |
+  打击音效 - 小赵 & HLMC
+  　　　结算音乐 - StarN_Woolf
 hitFx: [8, 8]
 holdAtlas: [50, 50]
 holdAtlasMH: [125, 125]
