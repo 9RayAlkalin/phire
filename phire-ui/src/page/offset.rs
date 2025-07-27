@@ -174,7 +174,7 @@ impl Page for OffsetPage {
             let mut t = self.tm.now() as f32 - config.offset;
 
             if config.adjust_time {
-                let latency = get_latency(&self.audio, &self.frame_times);
+                let latency = get_latency(&self.audio, &self.frame_times) as f32;
                 t -= latency;
                 ui.text(format!("{} {:.0}ms", tl!("estimated"), latency * 1000.))
                     .pos(0.0, ct.y + aspect * 0.5)

@@ -633,9 +633,9 @@ pub fn validate_combo(value: &String) -> bool {
     return RE_VALIDATE.is_match(&filtered_value);
 }
 
-pub fn get_latency(audio: &AudioManager, frame_times: &VecDeque<f64>) -> f32 {
+pub fn get_latency(audio: &AudioManager, frame_times: &VecDeque<f64>) -> f64 {
     let avg_frame_time = (1.0 / frame_times.len() as f64).min(0.25);
-    audio.estimate_latency().max(0.) + avg_frame_time as f32
+    audio.estimate_latency().max(0.) + avg_frame_time
 }
 
 pub fn push_frame_time(frame_times: &mut VecDeque<f64>, real_time: f64) {

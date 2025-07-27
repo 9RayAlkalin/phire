@@ -190,7 +190,7 @@ macro_rules! reset_music_speed {
         let now = $tm.now();
         $tm.speed = $res.config.speed as _;
         $tm.seek_to(now);
-        $self.music.seek_to(now as f32);
+        $self.music.seek_to(now);
     }};
 }
 
@@ -776,15 +776,15 @@ impl GameScene {
                     Some(1) => {
                         if self.mode == GameMode::Exercise && tm.now() > self.exercise_range.end as f64 && self.exercise_range.end - 0.1 < res.track_length {
                             tm.seek_to(self.exercise_range.start as f64);
-                            self.music.seek_to(self.exercise_range.start)?;
-                            pos = self.exercise_range.start;
+                            self.music.seek_to(self.exercise_range.start as f64)?;
+                            pos = self.exercise_range.start as f64;
                         }
                         self.music.play()?;
                         let now = tm.now();
                         tm.speed = res.config.speed as _;
                         tm.resume();
                         tm.seek_to(now - 1.);
-                        self.music.seek_to(now as f32 - 1.);
+                        self.music.seek_to(now - 1.);
                         self.pause_rewind = PauseRewind {
                             time: Some(tm.now()),
                             duration: Some(1.0),
@@ -865,7 +865,7 @@ impl GameScene {
                         };
                         if *ctrl == 0 {
                             tm.seek_to(p as f64);
-                            self.music.seek_to(p)?;
+                            self.music.seek_to(p as f64)?;
                         } else {
                             *(if *ctrl == -1 {
                                 &mut self.exercise_range.start
@@ -1106,7 +1106,7 @@ impl Scene for GameScene {
             }
             State::BeforeMusic => {
                 if time >= 0.0 {
-                    self.music.seek_to(time)?;
+                    self.music.seek_to(time as f64)?;
                     self.music.play()?;
                     self.state = State::Playing;
                 }
@@ -1172,7 +1172,7 @@ impl Scene for GameScene {
         let time = if self.mode == GameMode::TweakOffset {
             time.max(0.) - self.offset_chart()
         } else if self.res.config.adjust_time {
-            (time - self.offset() - get_latency(&self.res.audio, &self.res.frame_times)).max(0.)
+            (time - self.offset() - get_latency(&self.res.audio, &self.res.frame_times) as f32).max(0.)
         } else {
             (time - self.offset()).max(0.)
         };
@@ -1215,7 +1215,7 @@ impl Scene for GameScene {
                     if (tm.speed - res.config.speed as f64).abs() > 1e-3 {
                         reset_music_speed!(self, res, tm);
                     }
-                    self.music.seek_to(now as f32)?;
+                    self.music.seek_to(now)?;
                     self.music.play()?;
                     tm.seek_to(now);
                     tm.resume();
@@ -1247,7 +1247,7 @@ impl Scene for GameScene {
             }
             if is_key_pressed(KeyCode::Right) {
                 res.time += 5.;
-                let dst = (self.music.position() + 5.).min(res.track_length);
+                let dst = (self.music.position() + 5.).min(res.track_length as f64);
                 self.music.seek_to(dst)?;
                 tm.seek_to(dst as f64);
 
