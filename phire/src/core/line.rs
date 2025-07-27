@@ -1,10 +1,6 @@
 use super::{chart::ChartSettings, object::CtrlObject, Anim, AnimFloat, BpmList, Matrix, Note, Object, Point, RenderConfig, Resource, Vector};
 use crate::{
-    config::Mods,
-    ext::{get_viewport, parse_alpha, NotNanExt, SafeTexture},
-    info::ChartFormat,
-    judge::{JudgeStatus, LIMIT_BAD},
-    ui::Ui,
+    config::Mods, core::anim::AnimFloatF64, ext::{get_viewport, parse_alpha, NotNanExt, SafeTexture}, info::ChartFormat, judge::{JudgeStatus, LIMIT_BAD}, ui::Ui
 };
 use macroquad::prelude::*;
 use miniquad::{RenderPass, Texture, TextureParams, TextureWrap};
@@ -94,7 +90,7 @@ pub struct JudgeLineCache {
 
 impl JudgeLineCache {
     pub fn new(notes: &mut Vec<Note>) -> Self {
-        notes.sort_by_key(|it| (it.plain(), !it.above, it.speed.not_nan(), ((it.height + it.object.translation.1.now()) * it.speed).not_nan()));
+        notes.sort_by_key(|it| (it.plain(), !it.above, it.speed.not_nan(), ((it.height + it.object.translation.1.now() as f64) * it.speed as f64).not_nan()));
         let mut res = Self {
             update_order: Vec::new(),
             not_plain_count: 0,
@@ -138,7 +134,7 @@ pub struct JudgeLine {
     pub object: Object,
     pub ctrl_obj: RefCell<CtrlObject>,
     pub kind: JudgeLineKind,
-    pub height: AnimFloat,
+    pub height: AnimFloatF64,
     pub incline: AnimFloat,
     pub notes: Vec<Note>,
     pub color: Anim<Color>,
@@ -422,8 +418,8 @@ impl JudgeLine {
                 res.screen_to_world(Point::new(vw, -vh)),
                 res.screen_to_world(Point::new(vw, vh)),
             ];
-            let height_above = p[0].y.max(p[1].y.max(p[2].y.max(p[3].y))) * res.aspect_ratio;
-            let height_below = p[0].y.min(p[1].y.min(p[2].y.min(p[3].y))) * res.aspect_ratio;
+            let height_above = (p[0].y.max(p[1].y.max(p[2].y.max(p[3].y))) * res.aspect_ratio) as f64;
+            let height_below = (p[0].y.min(p[1].y.min(p[2].y.min(p[3].y))) * res.aspect_ratio) as f64;
             let agg = res.config.aggressive;
             let mut height = self.height.clone();
             if res.config.note_scale > 0. && res.config.render_note {
@@ -432,22 +428,23 @@ impl JudgeLine {
                         height.set_time(note.time.min(res.time));
                         height.now()
                     };
-                    let note_height = note.height - line_height + note.object.translation.1.now();
-                    if agg && note_height < height_below / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                    let note_height = note.height - line_height + note.object.translation.1.now() as f64;
+                    let speed = note.speed as f64;
+                    if agg && note_height < height_below / speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
                         continue;
                     }
-                    if agg && note_height > height_above / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                    if agg && note_height > height_above / speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
                         break;
                     }
                     note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id);
                 }
                 for index in &self.cache.above_indices {
-                    let speed = self.notes[*index].speed;
+                    let speed = self.notes[*index].speed as f64;
                     for note in self.notes[*index..].iter() {
-                        if !note.above || speed != note.speed {
+                        if !note.above || speed - note.speed as f64 > 1e-5 {
                             break;
                         }
-                        let note_height = note.height - config.line_height + note.object.translation.1.now();
+                        let note_height = note.height - config.line_height + note.object.translation.1.now() as f64;
                         if agg && note_height < height_below / speed {
                             continue;
                         }
@@ -464,22 +461,23 @@ impl JudgeLine {
                             height.set_time(note.time.min(res.time));
                             height.now()
                         };
-                        let note_height = note.height - line_height + note.object.translation.1.now();
-                        if agg && note_height < -height_above / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                        let note_height = note.height - line_height + note.object.translation.1.now() as f64;
+                        let speed = note.speed as f64;
+                        if agg && note_height < -height_above / speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
                             continue;
                         }
-                        if agg && note_height > -height_below / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                        if agg && note_height > -height_below / speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
                             break;
                         }
                         note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id);
                     }
                     for index in &self.cache.below_indices {
-                        let speed = self.notes[*index].speed;
+                        let speed = self.notes[*index].speed as f64;
                         for note in self.notes[*index..].iter() {
-                            if speed != note.speed {
+                            if speed - note.speed as f64 > 1e-5 {
                                 break;
                             }
-                            let note_height = note.height - config.line_height + note.object.translation.1.now();
+                            let note_height = note.height - config.line_height + note.object.translation.1.now() as f64;
                             if agg && note_height < -height_above / speed {
                                 continue;
                             }
@@ -524,7 +522,7 @@ impl JudgeLine {
                         };
                         let line_height_ulp = {
                             if !config.line_height.is_nan() & !config.line_height.is_infinite() {
-                                f32::EPSILON * config.line_height.abs()
+                                f64::EPSILON * config.line_height.abs()
                             } else {
                                 0.0
                             }

@@ -3,7 +3,7 @@ crate::tl_file!("parser" ptl);
 use super::{process_lines, RPE_TWEEN_MAP};
 use crate::{
     core::{
-        Anim, AnimFloat, AnimVector, BezierTween, BpmList, Chart, ChartExtra, ChartSettings, ClampedTween, CtrlObject, GifFrames, HitSoundMap,
+        Anim, AnimFloat, AnimFloatF64, AnimVector, BezierTween, BpmList, Chart, ChartExtra, ChartSettings, ClampedTween, CtrlObject, GifFrames, HitSoundMap,
         JudgeLine, JudgeLineCache, JudgeLineKind, Keyframe, Note, NoteKind, Object, StaticTween, Triple, TweenFunction, Tweenable, UIElement, EPS,
         HEIGHT_RATIO,
     },
@@ -216,11 +216,11 @@ fn parse_events<T: Tweenable, V: Clone + Into<T>>(
     Ok(Anim::new(kfs))
 }
 
-fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> Result<AnimFloat> {
+fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> Result<AnimFloatF64> {
     let rpe: Vec<_> = rpe.iter().filter_map(|it| it.speed_events.as_ref()).collect();
     if rpe.is_empty() {
         // TODO or is it?
-        return Ok(AnimFloat::default());
+        return Ok(AnimFloatF64::default());
     };
     let anis: Vec<_> = rpe
         .into_iter()
@@ -253,7 +253,7 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
     pts.sort();
     pts.dedup();
     let mut kfs = Vec::new();
-    let mut height = 0.0;
+    let mut height: f64 = 0.0;
     for i in 0..(pts.len() - 1) {
         let now_time = *pts[i];
         let end_time = *pts[i + 1];
@@ -278,10 +278,10 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
                 tween: Rc::new(ClampedTween::new(6 /*quadIn*/, (speed / end_speed)..1.)),
             }
         });
-        height += (speed + end_speed) * (end_time - now_time) / 2.;
+        height += (speed + end_speed) as f64 * (end_time - now_time) as f64 / 2.;
     }
     kfs.push(Keyframe::new(max_time, height, 0));
-    Ok(AnimFloat::new(kfs))
+    Ok(AnimFloatF64::new(kfs))
 }
 
 fn parse_gif_events<V: Clone + Into<f32>>(r: &mut BpmList, rpe: &[RPEEvent<V>], bezier_map: &BezierMap, gif: &GifFrames) -> Result<Anim<f32>> {
@@ -328,7 +328,7 @@ async fn parse_notes(
     r: &mut BpmList,
     rpe: Vec<RPENote>,
     fs: &mut dyn FileSystem,
-    height: &mut AnimFloat,
+    height: &mut AnimFloatF64,
     hitsounds: &mut HitSoundMap,
 ) -> Result<Vec<Note>> {
     let mut notes = Vec::new();

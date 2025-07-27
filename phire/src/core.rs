@@ -10,7 +10,7 @@ pub type Vector = nalgebra::Vector2<f32>;
 pub type Matrix = nalgebra::Matrix3<f32>;
 
 mod anim;
-pub use anim::{Anim, AnimFloat, AnimVector, Keyframe};
+pub use anim::{Anim, AnimFloat, AnimFloatF64, AnimVector, Keyframe};
 
 mod chart;
 pub use chart::{Chart, ChartExtra, ChartSettings, HitSoundMap};
