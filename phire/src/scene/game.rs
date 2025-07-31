@@ -686,7 +686,7 @@ impl GameScene {
                 //let ct = Vector::new(0., top + height / 2.);
                 ui.fill_rect(
                     Rect::new(-aspect_ratio, top, dest, height),
-                    //Color{ a: color.a * c.a * 0.6, ..color},
+                    //Color{ a: color.a * c.a, ..color},
                     Color::new(0.565, 0.565, 0.565, color.a * c.a),
                 );
                 ui.fill_rect(Rect::new(-aspect_ratio + dest - hw, top, hw * 2., height), Color::new(1., 1., 1., color.a * c.a));
@@ -1201,6 +1201,7 @@ impl Scene for GameScene {
         self.res.judge_line_color.a *= self.res.alpha;
         self.chart.update(&mut self.res);
         let res = &mut self.res;
+        #[cfg(feature = "video")]
         if !tm.paused() {
             for video in &mut self.chart.extra.videos {
                 if let Err(err) = video.update(res.time) {

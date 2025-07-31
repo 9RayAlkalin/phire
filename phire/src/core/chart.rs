@@ -1,7 +1,9 @@
 crate::tl_file!("parser");
 
-use super::{BpmList, Effect, JudgeLine, JudgeLineKind, Matrix, Resource, UIElement, Vector, Video};
-use crate::{core::Object, fs::FileSystem, judge::JudgeStatus, scene::show_error, ui::Ui};
+#[cfg(feature = "video")]
+use super::Video;
+use super::{BpmList, Effect, JudgeLine, JudgeLineKind, Matrix, Resource, UIElement, Vector};
+use crate::{core::Object, fs::FileSystem, judge::JudgeStatus, ui::Ui};
 use anyhow::{Context, Result};
 use macroquad::prelude::*;
 use sasa::AudioClip;
@@ -11,6 +13,7 @@ use std::{cell::RefCell, collections::HashMap};
 pub struct ChartExtra {
     pub effects: Vec<Effect>,
     pub global_effects: Vec<Effect>,
+    #[cfg(feature = "video")]
     pub videos: Vec<Video>,
 }
 
@@ -118,9 +121,10 @@ impl Chart {
         for line in &mut self.lines {
             line.cache.reset(&mut line.notes);
         }
+        #[cfg(feature = "video")]
         for video in &mut self.extra.videos {
             if let Err(err) = video.reset() {
-                show_error(err.context(tl!("video-load-failed", "path" => video.video_file.path().to_string_lossy())));
+                crate::scene::show_error(err.context(tl!("video-load-failed", "path" => video.video_file.path().to_string_lossy())));
             }
         }
     }
@@ -142,6 +146,7 @@ impl Chart {
     }
 
     pub fn render(&self, ui: &mut Ui, res: &mut Resource) {
+        #[cfg(feature = "video")]
         res.apply_model_of(&Matrix::identity().append_nonuniform_scaling(&Vector::new(if res.config.flip_x() { -1. } else { 1. }, 1.)), |res| {
             for video in &self.extra.videos {
                 video.render(res);
