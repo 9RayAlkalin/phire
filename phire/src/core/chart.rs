@@ -24,6 +24,7 @@ pub struct ChartSettings {
 }
 
 pub type HitSoundMap = HashMap<String, AudioClip>;
+const PROGRESS_BAR_COLOR: Color = Color::new(0.565, 0.565, 0.565, 1.0);
 
 pub struct Chart {
     pub offset: f32,
@@ -66,6 +67,7 @@ impl Chart {
 
     #[inline]
     pub fn with_element<R>(&self, ui: &mut Ui, res: &Resource, element: UIElement, scale_point: Option<(f32, f32)>, rotation_point: Option<(f32, f32)>, f: impl FnOnce(&mut Ui, Color) -> R) -> R {
+        let default_color = if matches!(element, UIElement::Bar) { PROGRESS_BAR_COLOR } else { WHITE };
         if let Some(id) = self.attach_ui[element as usize - 1] {
             let lines = &self.lines;
             let line = &lines[id];
@@ -78,11 +80,11 @@ impl Chart {
                 let ro = Object::new_translation_wrt_point(line.fetch_rotate(res, &lines), rotation_point.map_or_else(|| Vector::default(), |(x, y)| Vector::new(x, y)));
                 Matrix::new_translation(&tr) * ro * sc
             };
-            let mut color = self.lines[id].color.now_opt().unwrap_or(WHITE);
+            let mut color = self.lines[id].color.now_opt().unwrap_or(default_color);
             color.a *= obj.now_alpha().max(0.); 
             ui.with(translation, |ui| f(ui, color))
         } else {
-            f(ui, WHITE)
+            f(ui, default_color)
         }
     }
 

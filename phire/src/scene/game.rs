@@ -686,8 +686,7 @@ impl GameScene {
                 //let ct = Vector::new(0., top + height / 2.);
                 ui.fill_rect(
                     Rect::new(-aspect_ratio, top, dest, height),
-                    //Color{ a: color.a * c.a, ..color},
-                    Color::new(0.565, 0.565, 0.565, color.a * c.a),
+                    Color{ a: color.a * c.a, ..color },
                 );
                 ui.fill_rect(Rect::new(-aspect_ratio + dest - hw, top, hw * 2., height), Color::new(1., 1., 1., color.a * c.a));
             });
