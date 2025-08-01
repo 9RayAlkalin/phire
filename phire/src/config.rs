@@ -136,7 +136,7 @@ impl Default for Config {
             watermark: "".to_string(),
             roman: false,
             chinese: false,
-            combo: "COMBO".to_string(),
+            combo: "RECALL".to_string(),
             difficulty: "".to_string(),
             disable_loading: false,
 
