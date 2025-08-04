@@ -87,6 +87,13 @@ pub struct RPEEventLayer {
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct RGBColor(u8, u8, u8);
+
+impl Default for RGBColor {
+    fn default() -> Self {
+        Self(255, 255, 255)
+    }
+}
+
 impl From<RGBColor> for Color {
     fn from(RGBColor(r, g, b): RGBColor) -> Self {
         Self::from_rgba(r, g, b, 255)
@@ -122,6 +129,10 @@ pub struct RPENote {
     speed: f32,
     is_fake: u8,
     visible_time: f32,
+    #[serde(default)]
+    color: RGBColor,
+    #[serde(default="f32_one", rename = "judgeArea")]
+    judge_scale: f32,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -377,6 +388,14 @@ async fn parse_notes(
         };
         notes.push(Note {
             object: Object {
+                color: {
+                    let color = Color::from(note.color);
+                    if matches!(color, WHITE) {
+                        Anim::default()
+                    } else {
+                        Anim::fixed(color)
+                    }
+                },
                 alpha: if note.visible_time >= time {
                     if note.alpha >= 255 {
                         AnimFloat::default()
@@ -393,7 +412,7 @@ async fn parse_notes(
                 } else {
                     AnimVector(AnimFloat::fixed(note.size), AnimFloat::fixed(note.size))
                 },
-                ..Default::default()
+                rotation: AnimFloat::default(),
             },
             kind,
             hitsound,
@@ -405,6 +424,7 @@ async fn parse_notes(
             multiple_hint: false,
             fake: note.is_fake != 0,
             judge: JudgeStatus::NotJudged,
+            judge_scale: note.judge_scale,
             protected: false,
         })
     }
@@ -458,6 +478,11 @@ async fn parse_judge_line(
     let cache = JudgeLineCache::new(&mut notes);
     Ok(JudgeLine {
         object: Object {
+            color: if let Some(events) = rpe.extended.as_ref().and_then(|e| e.color_events.as_ref()) {
+                parse_events(r, events, Some(WHITE), bezier_map).with_context(|| ptl!("color-events-parse-failed"))?
+            } else {
+                Anim::default()
+            },
             alpha: events_with_factor(r, &event_layers, |it| &it.alpha_events, 1. / 255., "alpha", bezier_map)?,
             rotation: events_with_factor(r, &event_layers, |it| &it.rotate_events, -1., "rotate", bezier_map)?,
             translation: AnimVector(
@@ -590,11 +615,6 @@ async fn parse_judge_line(
                 )
             }
     },
-        color: if let Some(events) = rpe.extended.as_ref().and_then(|e| e.color_events.as_ref()) {
-            parse_events(r, events, Some(WHITE), bezier_map).with_context(|| ptl!("color-events-parse-failed"))?
-        } else {
-            Anim::default()
-        },
         parent: {
             let parent = rpe.parent.unwrap_or(-1);
             if parent == -1 {
