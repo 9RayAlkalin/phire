@@ -102,14 +102,20 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            #[cfg(not(feature = "play"))]
             auto_tweak_offset: false,
+            #[cfg(feature = "play")]
+            auto_tweak_offset: true,
+            #[cfg(not(feature = "play"))]
+            aggressive: false,
+            #[cfg(feature = "play")]
             aggressive: false,
             aspect_ratio: None,
             audio_buffer_size: None,
             #[cfg(target_os = "android")]
             audio_compatibility: false,
             challenge_color: ChallengeModeColor::Rainbow,
-            challenge_rank: 45,
+            challenge_rank: 3,
             chart_debug_line: 0.0,
             chart_debug_note: 0.0,
             chart_ratio: 1.0,
