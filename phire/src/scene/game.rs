@@ -356,7 +356,7 @@ impl GameScene {
     }
 
     pub async fn new(
-        preload_chart: Option<(Chart, ChartFormat)>,
+        preload_chart: Option<Chart>,
         mode: GameMode,
         info: ChartInfo,
         mut config: Config,
@@ -375,7 +375,7 @@ impl GameScene {
             }
             _ => {}
         }
-        let mut chart = if let Some((chart, chart_format)) = preload_chart {
+        let mut chart = if let Some(chart) = preload_chart {
             chart
         } else {
             Self::load_chart(fs.deref_mut(), &info, &config).await?

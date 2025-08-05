@@ -46,7 +46,7 @@ impl LoadingScene {
     pub const TOTAL_TIME: f32 = BEFORE_TIME + TRANSITION_TIME + WAIT_TIME;
 
     pub async fn new(
-        preload_chart: Option<(Chart, ChartFormat)>,
+        preload_chart: Option<Chart>,
         mode: GameMode,
         mut info: ChartInfo,
         config: &Config,
