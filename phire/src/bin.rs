@@ -512,14 +512,12 @@ impl BinaryData for JudgeLine {
 impl BinaryData for ChartSettings {
     fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
         Ok(Self {
-            pe_alpha_extension: r.read::<u8>()? == 1,
-            hold_partial_cover: r.read::<u8>()? == 1,
+            pe_alpha_extension: r.read()?,
         })
     }
 
     fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {
-        w.write_val(self.pe_alpha_extension as u8)?;
-        w.write_val(self.hold_partial_cover as u8)?;
+        w.write_val(self.pe_alpha_extension)?;
         Ok(())
     }
 }

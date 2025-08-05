@@ -432,14 +432,14 @@ impl JudgeLine {
                         height.set_time(note.time.min(res.time));
                         height.now()
                     };
-                    let note_height = note.height - line_height + note.object.translation.1.now();
-                    if agg && note_height < height_below / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                    let note_height = (note.height - line_height + note.object.translation.1.now()) * note.speed;
+                    if agg && note_height > height_above {
                         continue;
                     }
-                    if agg && note_height > height_above / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                    if agg && note_height < height_below {
                         break;
                     }
-                    note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id);
+                    note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id, height_above);
                 }
                 for index in &self.cache.above_indices {
                     let speed = self.notes[*index].speed;
@@ -447,14 +447,14 @@ impl JudgeLine {
                         if !note.above || speed != note.speed {
                             break;
                         }
-                        let note_height = note.height - config.line_height + note.object.translation.1.now();
-                        if agg && note_height < height_below / speed {
+                        let note_height = (note.height - config.line_height + note.object.translation.1.now()) * speed;
+                        if agg && note_height > height_above {
                             continue;
                         }
-                        if agg && note_height > height_above / speed {
+                        if agg && note_height < height_below {
                             break;
                         }
-                        note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id);
+                        note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id, height_above);
                     }
                 }
 
@@ -464,14 +464,14 @@ impl JudgeLine {
                             height.set_time(note.time.min(res.time));
                             height.now()
                         };
-                        let note_height = note.height - line_height + note.object.translation.1.now();
-                        if agg && note_height < -height_above / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                        let note_height = (note.height - line_height + note.object.translation.1.now()) * note.speed;
+                        if agg && -note_height < height_below {
                             continue;
                         }
-                        if agg && note_height > -height_below / note.speed && matches!(res.chart_format, ChartFormat::Pgr | ChartFormat::Rpe) {
+                        if agg && -note_height > height_above {
                             break;
                         }
-                        note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id);
+                        note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id, -height_below);
                     }
                     for index in &self.cache.below_indices {
                         let speed = self.notes[*index].speed;
@@ -479,14 +479,14 @@ impl JudgeLine {
                             if speed != note.speed {
                                 break;
                             }
-                            let note_height = note.height - config.line_height + note.object.translation.1.now();
-                            if agg && note_height < -height_above / speed {
+                            let note_height = (note.height - config.line_height + note.object.translation.1.now()) * speed;
+                            if agg && -note_height < height_below {
                                 continue;
                             }
-                            if agg && note_height > -height_below / speed {
+                            if agg && -note_height > height_above {
                                 break;
                             }
-                            note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id);
+                            note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id, -height_below);
                         }
                     }
                 });

@@ -20,7 +20,6 @@ pub struct ChartExtra {
 #[derive(Default)]
 pub struct ChartSettings {
     pub pe_alpha_extension: bool,
-    pub hold_partial_cover: bool,
 }
 
 pub type HitSoundMap = HashMap<String, AudioClip>;

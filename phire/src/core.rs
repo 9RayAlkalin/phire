@@ -75,6 +75,10 @@ impl Triple {
 pub struct BpmList {
     elements: Vec<(f32, f32, f32)>, // (beats, time, bpm)
     cursor: usize,
+    // compatible pgr formatVersion
+    // false: use global bpm list storage.
+    // true: use per-line bpm list storage. For compatibility, f32 is still used as index here, but don't worry, treat it as int
+    per_line_bpm_storage: bool,
 }
 
 impl BpmList {
@@ -91,16 +95,24 @@ impl BpmList {
             last_bpm = Some(bpm);
             elements.push((now_beats, time, bpm));
         }
-        BpmList { elements, cursor: 0 }
+        BpmList {
+            elements,
+            cursor: 0,
+            per_line_bpm_storage: false,
+        }
     }
 
-    // compatible pgr
+    // compatible pgr formatVersion
     pub fn from_time(ranges: Vec<(f32, f32)> /*(time/index, bpm)*/) -> Self {
         let mut elements = Vec::new();
         for (time, bpm) in ranges {
             elements.push((0.0, time, bpm));
         }
-        BpmList { elements, cursor: 0 }
+        BpmList {
+            elements,
+            cursor: 0,
+            per_line_bpm_storage: true,
+        }
     }
 
     pub fn time_beats(&mut self, beats: f32) -> f32 {
