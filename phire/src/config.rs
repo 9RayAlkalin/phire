@@ -109,7 +109,7 @@ impl Default for Config {
             #[cfg(not(feature = "play"))]
             aggressive: false,
             #[cfg(feature = "play")]
-            aggressive: false,
+            aggressive: true,
             aspect_ratio: None,
             audio_buffer_size: None,
             #[cfg(target_os = "android")]
