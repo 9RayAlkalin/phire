@@ -94,7 +94,22 @@ pub struct JudgeLineCache {
 
 impl JudgeLineCache {
     pub fn new(notes: &mut Vec<Note>) -> Self {
-        notes.sort_by_key(|it| (it.plain(), !it.above, it.speed.not_nan(), ((it.height + it.object.translation.1.now()) * it.speed).not_nan()));
+        notes.sort_by_key(|it| {
+            let speed_key = if it.plain() {
+                it.speed.not_nan()
+            } else {
+                1.0.not_nan() // only group plain notes by speed
+            };
+
+            (
+                it.plain(),
+                !it.above,
+                speed_key,
+                (it.height + it.object.translation.1.now()).not_nan(),
+                it.speed.not_nan(),
+            )
+        });
+        
         let mut res = Self {
             update_order: Vec::new(),
             not_plain_count: 0,
@@ -433,10 +448,10 @@ impl JudgeLine {
                         height.now()
                     };
                     let note_height = (note.height - line_height + note.object.translation.1.now()) * note.speed;
-                    if agg && note_height > height_above {
+                    if agg && note_height < height_below {
                         continue;
                     }
-                    if agg && note_height < height_below {
+                    if agg && note_height > height_above {
                         break;
                     }
                     note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id, height_above);
@@ -448,10 +463,10 @@ impl JudgeLine {
                             break;
                         }
                         let note_height = (note.height - config.line_height + note.object.translation.1.now()) * speed;
-                        if agg && note_height > height_above {
+                        if agg && note_height < height_below {
                             continue;
                         }
-                        if agg && note_height < height_below {
+                        if agg && note_height > height_above {
                             break;
                         }
                         note.render(ui, res, &mut config, bpm_list, line_set_debug_alpha, id, height_above);
