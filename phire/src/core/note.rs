@@ -138,11 +138,6 @@ impl Note {
         line.object.rotation.now() + if self.above { 0. } else { 180. }
     }
 
-    pub fn plain(&self) -> bool {
-        !self.fake && !matches!(self.kind, NoteKind::Hold { .. }) && self.object.translation.1.keyframes.len() <= 1
-        // && self.ctrl_obj.is_default()
-    }
-
     pub fn update(&mut self, res: &mut Resource, parent_rot: f32, parent_tr: &Matrix, ctrl_obj: &mut CtrlObject, line_height: f32, bpm_list: &mut BpmList, index: usize) {
         self.object.set_time(res.time);
         //let mut _immediate_particle = false;
@@ -205,10 +200,6 @@ impl Note {
     }
 
     pub fn render(&self, ui: &mut Ui, res: &mut Resource, config: &mut RenderConfig, bpm_list: &mut BpmList, line_set_debug_alpha: bool, line_id: usize, height_above: f32) {
-        if matches!(self.judge, JudgeStatus::Judged) && !matches!(self.kind, NoteKind::Hold { .. }) {
-            return;
-        }
-
         if config.appear_before.is_finite() {
         //if config.appear_before.is_finite() && !matches!(self.kind, NoteKind::Hold { .. }) {
             let beat = bpm_list.beat(self.time);
