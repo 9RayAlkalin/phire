@@ -173,7 +173,7 @@ impl Page for OffsetPage {
 
             let mut t = self.tm.now() as f32 - config.offset;
 
-            if config.adjust_time {
+            if config.auto_tweak_offset {
                 let latency = get_latency(&self.audio, &self.frame_times) as f32;
                 t -= latency;
                 ui.text(format!("{} {:.0}ms", tl!("estimated"), latency * 1000.))
@@ -244,7 +244,7 @@ impl Page for OffsetPage {
             self.slider
                 .render(ui, Rect::new(-0.08, ct.y + aspect * 0.1 - 0.2 / 2., 0.45, 0.2), ot, c, offset, format!("{offset:.0}ms"));
 
-            if config.adjust_time {
+            if config.auto_tweak_offset {
                 push_frame_time(&mut self.frame_times, self.tm.real_time());
             }
         });

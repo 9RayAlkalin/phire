@@ -1024,7 +1024,7 @@ impl Scene for GameScene {
         self.music = Self::new_music(&mut self.res)?;
         self.res.camera.render_target = target;
         tm.speed = self.res.config.speed as _;
-        tm.adjust_time = self.res.config.adjust_time;
+        tm.adjust_time = self.res.config.auto_tweak_offset;
         reset!(self, self.res, tm);
         set_camera(&self.res.camera);
         self.first_in = true;
@@ -1168,7 +1168,7 @@ impl Scene for GameScene {
 
         let time = if self.mode == GameMode::TweakOffset {
             time.max(0.) - self.offset_chart()
-        } else if self.res.config.adjust_time {
+        } else if self.res.config.auto_tweak_offset {
             (time - self.offset() - get_latency(&self.res.audio, &self.res.frame_times) as f32).max(0.)
         } else {
             (time - self.offset()).max(0.)
@@ -1521,7 +1521,7 @@ impl Scene for GameScene {
             self.gl.flush();
         }
 
-        if self.res.config.adjust_time {
+        if self.res.config.auto_tweak_offset {
             push_frame_time(&mut self.res.frame_times, tm.real_time());
         }
         

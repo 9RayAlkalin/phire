@@ -448,7 +448,7 @@ impl AudioList {
         let data = get_data_mut();
         let config = &mut data.config;
         if self.adjust_btn.touch(touch, t) {
-            config.adjust_time ^= true;
+            config.auto_tweak_offset ^= true;
             return Ok(Some(true));
         }
         if let wt @ Some(_) = self.music_slider.touch(touch, t, &mut config.volume_music) {
@@ -507,7 +507,7 @@ impl AudioList {
         let config = &data.config;
         item! {
             render_title(ui, c, tl!("item-auto-latency"), Some(tl!("item-auto-latency-sub")));
-            render_switch(ui, rr, t, c, &mut self.adjust_btn, config.adjust_time);
+            render_switch(ui, rr, t, c, &mut self.adjust_btn, config.auto_tweak_offset);
         }
         item! {
             render_title(ui, c, tl!("item-music"), None);

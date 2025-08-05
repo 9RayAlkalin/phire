@@ -29,7 +29,7 @@ pub enum ChallengeModeColor {
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     #[serde(rename = "adjust_time_new")]
-    pub adjust_time: bool,
+    pub auto_tweak_offset: bool,
     pub aggressive: bool,
     pub aspect_ratio: Option<f32>,
     pub audio_buffer_size: Option<u32>,
@@ -102,7 +102,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            adjust_time: false,
+            auto_tweak_offset: false,
             aggressive: false,
             aspect_ratio: None,
             audio_buffer_size: None,
