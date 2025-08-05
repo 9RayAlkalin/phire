@@ -417,6 +417,7 @@ struct AudioList {
     sfx_slider: Slider,
     bgm_slider: Slider,
     cali_btn: DRectButton,
+    #[cfg(target_os = "android")]
     audio_compatibility_btn: DRectButton,
 
     cali_task: LocalTask<Result<OffsetPage>>,
@@ -431,6 +432,7 @@ impl AudioList {
             sfx_slider: Slider::new(0.0..2.0, 0.05),
             bgm_slider: Slider::new(0.0..2.0, 0.05),
             cali_btn: DRectButton::new(),
+            #[cfg(target_os = "android")]
             audio_compatibility_btn: DRectButton::new(),
 
             cali_task: None,
@@ -466,6 +468,7 @@ impl AudioList {
             self.cali_task = Some(Box::pin(OffsetPage::new()));
             return Ok(Some(false));
         }
+        #[cfg(target_os = "android")]
         if self.audio_compatibility_btn.touch(touch, t) {
             config.audio_compatibility ^= true;
             return Ok(Some(true));
@@ -522,6 +525,7 @@ impl AudioList {
             render_title(ui, c, tl!("item-cali"), None);
             self.cali_btn.render_text(ui, rr, t, c.a, format!("{:.0}ms", config.offset * 1000.), 0.5, true);
         }
+        #[cfg(target_os = "android")]
         item! {
             render_title(ui, c, tl!("item-audio-compatibility"), None);
             render_switch(ui, rr, t, c, &mut self.audio_compatibility_btn, config.audio_compatibility);
