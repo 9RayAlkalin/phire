@@ -186,8 +186,19 @@ impl JudgeLine {
             _ => {}
         }
         self.color.set_time(res.time);
+
+        let not_judge = |index: usize| {
+            match self.notes[index].kind {
+                NoteKind::Hold { end_time, .. } => {
+                    matches!(self.notes[index].judge, JudgeStatus::Judged) && res.time > end_time
+                },
+                _ => {
+                    matches!(self.notes[index].judge, JudgeStatus::Judged)
+                },
+            }
+        };
         self.cache.above_indices.retain_mut(|index| {
-            while matches!(self.notes[*index].judge, JudgeStatus::Judged) {
+            while not_judge(*index) {
                 if self
                     .notes
                     .get(*index + 1)
@@ -201,8 +212,12 @@ impl JudgeLine {
             true
         });
         self.cache.below_indices.retain_mut(|index| {
-            while matches!(self.notes[*index].judge, JudgeStatus::Judged) {
-                if self.notes.get(*index + 1).map_or(false, |it| it.speed == self.notes[*index].speed) {
+            while not_judge(*index) {
+                if self
+                    .notes
+                    .get(*index + 1)
+                    .map_or(false, |it| it.speed == self.notes[*index].speed)
+                {
                     *index += 1;
                 } else {
                     return false;
