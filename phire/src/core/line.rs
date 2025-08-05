@@ -388,7 +388,7 @@ impl JudgeLine {
             let mut line_set_debug_alpha = false;
             if alpha < 0.0 {
                 if !settings.pe_alpha_extension {
-                    if res.config.chart_debug_line > 0. {
+                    if res.config.chart_debug_note > 0. {
                         line_set_debug_alpha = true;
                     } else {
                         return;
@@ -397,7 +397,7 @@ impl JudgeLine {
                 let w = (-alpha).floor() as u32;
                 match w {
                     1 => {
-                        if res.config.chart_debug_line > 0. {
+                        if res.config.chart_debug_note > 0. {
                             line_set_debug_alpha = true;
                         } else {
                             return;
