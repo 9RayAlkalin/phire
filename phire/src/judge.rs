@@ -583,7 +583,7 @@ impl Judge {
                     matches!(note.kind, NoteKind::Drag | NoteKind::Flick)
                         && judge_time >= -LIMIT_GOOD
                         && judge_time <= LIMIT_BAD
-                        && (x.now() - posx).abs() <= x_diff_max // note_dist <= x_diff_max
+                        && (x.now() - posx).abs() <= x_diff_max * note.judge_scale // note_dist <= x_diff_max
                         && !note.protected
                         && !note.fake
                 };
@@ -707,7 +707,7 @@ impl Judge {
                         let x = &mut note.object.translation.0;
                         x.set_time(t);
                         let x = x.now();
-                        if self.key_down_count == 0 && !pos.iter().any(|it| it.map_or(false, |it| (it.x - x).abs() <= x_diff_max)) {
+                        if self.key_down_count == 0 && !pos.iter().any(|it| it.map_or(false, |it| (it.x - x).abs() <= x_diff_max * note.judge_scale)) {
                             if t > *up_time + UP_TOLERANCE {
                                 note.judge = JudgeStatus::Judged;
                                 judgements.push((Judgement::Miss, line_id, *id, None));
@@ -744,7 +744,7 @@ impl Judge {
                     || pos.iter().any(|it| {
                         it.map_or(false, |it| {
                             let dx = (it.x - x).abs();
-                            dx <= x_diff_max && dt <= (LIMIT_BAD - LIMIT_PERFECT * (dx - 0.9).max(0.))
+                            dx <= x_diff_max * note.judge_scale && dt <= (LIMIT_BAD - LIMIT_PERFECT * (dx - 0.9).max(0.))
                         })
                     })
                 {
