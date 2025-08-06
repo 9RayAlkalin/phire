@@ -435,15 +435,15 @@ impl JudgeLine {
                     _ => {}
                 }
             }
-            let (vw, vh) = (1.2 / res.config.chart_ratio, 1. / res.config.chart_ratio);
+            let (vw, vh) = (1.2 / res.config.chart_ratio, 1.0 / res.config.chart_ratio);
             let p = [
                 res.screen_to_world(Point::new(-vw, -vh)),
                 res.screen_to_world(Point::new(-vw, vh)),
                 res.screen_to_world(Point::new(vw, -vh)),
                 res.screen_to_world(Point::new(vw, vh)),
             ];
-            let height_above = p[0].y.max(p[1].y.max(p[2].y.max(p[3].y))) * res.aspect_ratio;
-            let height_below = p[0].y.min(p[1].y.min(p[2].y.min(p[3].y))) * res.aspect_ratio;
+            let height_above = p[0].y.max(p[1].y.max(p[2].y.max(p[3].y)));
+            let height_below = p[0].y.min(p[1].y.min(p[2].y.min(p[3].y)));
             let agg = res.config.aggressive;
             let mut height = self.height.clone();
             if res.config.note_scale > 0. && res.config.render_note {
@@ -471,7 +471,7 @@ impl JudgeLine {
                                     config.line_height
                                 }
                             };
-                            let note_height = (note.height - line_height + note.object.translation.1.now()) * speed;
+                            let note_height = (note.height - line_height + note.object.translation.1.now()) / res.aspect_ratio * speed;
                             if note_height < height_below {
                                 continue;
                             }
@@ -508,7 +508,7 @@ impl JudgeLine {
                                         config.line_height
                                     }
                                 };
-                                let note_height = (note.height - line_height + note.object.translation.1.now()) * note.speed;
+                                let note_height = (note.height - line_height + note.object.translation.1.now()) / res.aspect_ratio * speed;
                                 if note_height < -height_above {
                                     continue;
                                 }

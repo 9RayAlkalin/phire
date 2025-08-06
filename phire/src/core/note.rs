@@ -443,7 +443,7 @@ impl Note {
             }
         }
         if res.config.chart_debug_note > 0. {
-            if base > height_above {
+            if base > height_above || res.time <= 0. {
                 return;
             }
             let above = if self.above { "" } else { " below" };
