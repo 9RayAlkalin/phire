@@ -470,7 +470,13 @@ async fn parse_judge_line(
                         .as_ref()
                         .map(|it| parse_events(r, it, None, bezier_map))
                         .transpose()?
-                        .unwrap_or(Anim::fixed(1.0));
+                        .unwrap_or(
+                            if factor == 1. {
+                                Anim::default()
+                            } else {
+                                Anim::fixed(1.0)
+                            }
+                        );
                     res.map_value(|v| v * factor);
                     Ok(res)
                 }
