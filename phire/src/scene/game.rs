@@ -541,7 +541,7 @@ impl GameScene {
             text_size *= max_width / text_width
         }
         let ct = text.size(text_size).measure().center();
-        self.chart.with_element(ui, res, UIElement::Score, Some((score_right - ct.x, score_top + ct.y)), Some((score_right, score_top)), |ui, color| {
+        self.chart.with_element(ui, res, UIElement::Score, Some((score_right, score_top)), Some((score_right, score_top)), |ui, color| {
             if res.config.render_ui_score {
                 ui.text(score)
                     .pos(score_right, score_top)
@@ -560,7 +560,7 @@ impl GameScene {
             }
         });
         if res.config.render_ui_pause {
-            self.chart.with_element(ui, res, UIElement::Pause, Some((pause_center.x, pause_center.y)), Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), |ui, color| {
+            self.chart.with_element(ui, res, UIElement::Pause, Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), |ui, color| {
                 let mut r = Rect::new(pause_center.x - pause_w / 2., pause_center.y - pause_h / 2., pause_w, pause_h);
                 //let ct = pause_center.coords;
                 let c = Color { a: color.a * c.a, ..color };
@@ -572,8 +572,6 @@ impl GameScene {
                 ;
             });
         }
-        let unit_h = ui.text("0").size(scale_ratio).measure().h;
-        let combo_y = top + eps * 1.55 - (1. - p) * 0.4;
         if self.judge.combo() >= 3 && res.config.render_ui_combo {
             let combo = if res.config.roman {
                 Self::int_to_roman(self.judge.combo())
@@ -583,47 +581,48 @@ impl GameScene {
             else {
                 self.judge.combo().to_string()
             };
-            let btm = self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y + unit_h / 2. * 0.98)), Some((0., combo_y + unit_h / 2. * 0.98)), |ui, color| {
-                let mut text_size = 0.98 * scale_ratio;
-                let max_width = 0.55 * aspect_ratio;
-                let mut text = ui.text(&combo)
-                    .size(text_size)
-                    .color(Color::new(0., 0., 0., 0.))
-                    .pos(0., combo_y + unit_h / 2. * 0.98)
-                    .anchor(0.5, 0.5);
-                let text_width = text.measure().w;
-                let text_btm = text.draw().bottom();
-                if text_width > max_width {
-                    text_size *= max_width / text_width
-                }
-                ui.text(&combo)
-                .pos(0., top + eps * 1.30 - (1. - p) * 0.4)
-                .anchor(0.5, 0.)
-                .color(Color { a: color.a * c.a, ..color })
+            let mut text_size = 0.98 * scale_ratio;
+            let max_width = 0.55 * aspect_ratio;
+            let mut text = ui.text(&combo)
                 .size(text_size)
-                .draw();
-                text_btm
+                .color(Color::new(0., 0., 0., 0.));
+            let ct = text.measure().center();
+            let text_width = text.measure().w;
+            if text_width > max_width {
+                text_size *= max_width / text_width
+            }
+            let combo_y = top + eps * 1.55 - (1. - p) * 0.4 + ct.y;
+            let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.01;
+            self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y)), Some((0., combo_y)), |ui, color| {
+                ui.text(&combo)
+                    .pos(0., combo_y)
+                    .anchor(0.5, 0.5)
+                    .color(Color { a: color.a * c.a, ..color })
+                    .size(text_size)
+                    .draw();
             });
-            self.chart.with_element(ui, res, UIElement::Combo, Some((0., btm + 0.01 + unit_h / 2. * 0.34)), Some((0., btm + 0.01 + unit_h / 2. * 0.34)), |ui, color| {
+            let mut text = ui.text(&res.config.combo).size(0.34 * scale_ratio);
+            let ct = text.measure().center();
+            self.chart.with_element(ui, res, UIElement::Combo, Some((0., btm + ct.y)), Some((0., btm + ct.y)), |ui, color| {
                 if (cfg!(feature = "play") && res.config.autoplay()) || validate_combo(&res.config.combo) || res.config.combo.len() > 50 {
                     ui.text("AUTOPLAY")
-                    .pos(0., btm + 0.01)
-                    .anchor(0.5, 0.)
-                    .size(0.34 * scale_ratio)
-                    .color(Color { a: color.a * c.a, ..color })
-                    .draw();
+                        .pos(0., btm + ct.y)
+                        .anchor(0.5, 0.5)
+                        .size(0.34 * scale_ratio)
+                        .color(Color { a: color.a * c.a, ..color })
+                        .draw();
                     return;
                 }
                 ui.text(&res.config.combo)
-                    .pos(0., btm + 0.01)
-                    .anchor(0.5, 0.)
+                    .pos(0., btm + ct.y)
+                    .anchor(0.5, 0.5)
                     .size(0.34 * scale_ratio)
                     .color(Color { a: color.a * c.a, ..color })
                     .draw();
             });
         }
         let lf = -aspect_ratio + margin;
-        let bt = -top - eps * 3.5;
+        let bt = -top - eps * 3.5 + (1. - p) * 0.4;
         if res.config.render_ui_name {
             let mut text_size = 0.505 * scale_ratio;
             let mut text = ui.text(&res.info.name).size(text_size);
@@ -633,9 +632,9 @@ impl GameScene {
                 text_size *= max_width / text_width
             }
             let ct = text.size(text_size).measure().center();
-            self.chart.with_element(ui, res, UIElement::Name, Some((lf + ct.x, bt - ct.y)), Some((lf, -top - eps * 2.)), |ui, color| {
+            self.chart.with_element(ui, res, UIElement::Name, Some((lf, bt)), Some((lf, bt)), |ui, color| {
                 ui.text(&res.info.name)
-                    .pos(lf, bt + (1. - p) * 0.4)
+                    .pos(lf, bt)
                     .anchor(0., 1.)
                     .size(text_size)
                     .color(Color { a: color.a * c.a, ..color })
@@ -651,9 +650,9 @@ impl GameScene {
                 text_size *= max_width / text_width
             }
             let ct = text.size(text_size).measure().center();
-            self.chart.with_element(ui, res, UIElement::Level, Some((-lf - ct.x, bt - ct.y)), Some((-lf, -top - eps * 2.)), |ui, color| {
+            self.chart.with_element(ui, res, UIElement::Level, Some((-lf, bt)), Some((-lf, bt)), |ui, color| {
                 ui.text(&res.info.level)
-                    .pos(-lf, bt + (1. - p) * 0.4)
+                    .pos(-lf, bt)
                     .anchor(1., 1.)
                     .size(0.505 * scale_ratio)
                     .color(Color { a: color.a * c.a, ..color })
