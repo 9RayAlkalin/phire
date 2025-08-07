@@ -2,8 +2,7 @@
 
 crate::tl_file!("game");
 
-use chinese_number::{ChineseCase, ChineseCountMethod, ChineseVariant, NumberToChinese, ChineseToNumber};
-use regex::Regex;
+use chinese_number::{ChineseCase, ChineseCountMethod, ChineseVariant, NumberToChinese};
 use super::{
     draw_background,
     ending::RecordUpdateState,
@@ -11,35 +10,25 @@ use super::{
     request_input, return_input, show_message, take_input, EndingScene, NextScene, Scene,
 };
 use crate::{
-    bin::{BinaryReader, BinaryWriter},
+    bin::BinaryReader,
     config::{Config, Mods},
-    core::{copy_fbo, BadNote, Chart, ChartExtra, Effect, Matrix, Point, Resource, UIElement, Vector, BUFFER_SIZE},
+    core::{BadNote, Chart, ChartExtra, Effect, Point, Resource, UIElement, BUFFER_SIZE},
     ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
     fs::FileSystem, gyro::{Gyro, GYRO, GYROSCOPE_DATA},
     info::{ChartFormat, ChartInfo},
     judge::Judge, parse::{parse_extra, parse_pec, parse_phigros, parse_rpe},
-    particle::EmitterConfig,
-    task::Task,
     time::TimeManager,
     ui::{RectButton, Ui}
 };
 use anyhow::{bail, Context, Result};
 use concat_string::concat_string;
-use lyon::path::Path;
 use macroquad::{prelude::*, window::InternalGlContext};
 use sasa::{Music, MusicParams};
 use serde::{Deserialize, Serialize};
 use std::{
-    any::Any,
-    cell::RefCell,
-    fs::File,
-    io::{Cursor, ErrorKind},
+    io::Cursor,
     ops::{DerefMut, Range},
-    path::PathBuf,
-    process::{Command, Stdio},
-    rc::Rc,
-    sync::{Arc, Mutex},
-    time::Duration,
+    sync::Arc,
 };
 use tracing::{debug, warn};
 
@@ -540,7 +529,6 @@ impl GameScene {
         if text_width > max_width {
             text_size *= max_width / text_width
         }
-        let ct = text.size(text_size).measure().center();
         self.chart.with_element(ui, res, UIElement::Score, Some((score_right, score_top)), Some((score_right, score_top)), |ui, color| {
             if res.config.render_ui_score {
                 ui.text(score)
@@ -569,7 +557,6 @@ impl GameScene {
                 ui.fill_rect(r, c);
                 r.x += pause_w * 2.;
                 ui.fill_rect(r, c);
-                ;
             });
         }
         if self.judge.combo() >= 3 && res.config.render_ui_combo {
@@ -631,7 +618,6 @@ impl GameScene {
             if text_width > max_width {
                 text_size *= max_width / text_width
             }
-            let ct = text.size(text_size).measure().center();
             self.chart.with_element(ui, res, UIElement::Name, Some((lf, bt)), Some((lf, bt)), |ui, color| {
                 ui.text(&res.info.name)
                     .pos(lf, bt)
@@ -649,7 +635,6 @@ impl GameScene {
             if text_width > max_width {
                 text_size *= max_width / text_width
             }
-            let ct = text.size(text_size).measure().center();
             self.chart.with_element(ui, res, UIElement::Level, Some((-lf, bt)), Some((-lf, bt)), |ui, color| {
                 ui.text(&res.info.level)
                     .pos(-lf, bt)
@@ -773,7 +758,6 @@ impl GameScene {
                         if self.mode == GameMode::Exercise && tm.now() > self.exercise_range.end as f64 && self.exercise_range.end - 0.1 < res.track_length {
                             tm.seek_to(self.exercise_range.start as f64);
                             self.music.seek_to(self.exercise_range.start as f64)?;
-                            pos = self.exercise_range.start as f64;
                         }
                         self.music.play()?;
                         let now = tm.now();
