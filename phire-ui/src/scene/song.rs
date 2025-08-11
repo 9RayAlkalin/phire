@@ -1890,7 +1890,7 @@ impl Scene for SongScene {
 
         let r = ui.back_rect();
         self.back_btn.set(ui, r);
-        ui.fill_rect(r, (*self.icons.back, r, ScaleType::Fit, c));
+        ui.fill_rect(r, (*self.icons.back, r, ScaleType::Fit, WHITE));
 
         let r = ui
             .text(&self.info.name)
