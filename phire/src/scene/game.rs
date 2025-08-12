@@ -303,7 +303,7 @@ impl GameScene {
     }
     
 
-    pub async fn load_chart(fs: &mut dyn FileSystem, info: &ChartInfo, config: &Config) -> Result<Chart> {
+    pub async fn load_chart(fs: &mut dyn FileSystem, info: &ChartInfo, config: &Config) -> Result<(Chart, ChartFormat)> {
         let extra = if config.render_extra {
             if let Some(extra) = fs.load_file("extra.json").await.ok().map(String::from_utf8).transpose()? {
                 parse_extra(&extra, fs).await.context("Failed to parse extra")?
@@ -341,11 +341,11 @@ impl GameScene {
             }
         }?;
         chart.load_textures(fs).await?;
-        Ok(chart)
+        Ok((chart, format))
     }
 
     pub async fn new(
-        preload_chart: Option<Chart>,
+        preload_chart: Option<(Chart, ChartFormat)>,
         mode: GameMode,
         info: ChartInfo,
         mut config: Config,
@@ -364,8 +364,8 @@ impl GameScene {
             }
             _ => {}
         }
-        let mut chart = if let Some(chart) = preload_chart {
-            chart
+        let (mut chart, format) = if let Some((chart, format)) = preload_chart {
+            (chart, format)
         } else {
             Self::load_chart(fs.deref_mut(), &info, &config).await?
         };
