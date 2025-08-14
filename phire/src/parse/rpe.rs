@@ -234,12 +234,12 @@ fn parse_events<T: Tweenable, V: Clone + Into<T>>(
 }
 
 fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> Result<AnimFloat> {
-    let rpe: Vec<_> = rpe.iter().filter_map(|it| it.speed_events.as_ref()).collect();
+    let rpe: Vec<&Vec<RPESpeedEvent>> = rpe.iter().filter_map(|it| it.speed_events.as_ref()).collect();
     if rpe.is_empty() {
         // TODO or is it?
         return Ok(AnimFloat::default());
     };
-    let anis: Vec<_> = rpe
+    let anis: Vec<AnimFloat> = rpe
         .into_iter()
         .map(|it| {
             let mut kfs = Vec::new();
@@ -271,7 +271,7 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
             AnimFloat::new(kfs)
         })
         .collect();
-    let mut pts: Vec<_> = anis.iter().flat_map(|it| it.keyframes.iter().map(|it| it.time.not_nan())).collect();
+    let mut pts: Vec<NotNan<f32>> = anis.iter().flat_map(|it| it.keyframes.iter().map(|it| it.time.not_nan())).collect();
     pts.push(max_time.not_nan());
     pts.sort();
     pts.dedup();
@@ -322,7 +322,7 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
     Ok(AnimFloat::new(kfs))
 }
 
-fn parse_gif_events<V: Clone + Into<f32>>(r: &mut BpmList, rpe: &[RPEEvent<V>], bezier_map: &BezierMap, gif: &GifFrames) -> Result<Anim<f32>> {
+fn parse_gif_events<V: Clone + Into<f32>>(r: &mut BpmList, rpe: &[RPEEvent<V>], bezier_map: &BezierMap, gif: &GifFrames) -> Result<AnimFloat> {
     let mut kfs = Vec::new();
     kfs.push(Keyframe::new(0.0, 0.0, 2));
     let mut next_rep_time: u128 = 0;
