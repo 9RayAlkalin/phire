@@ -8,10 +8,11 @@ license = "GPL-3.0-only"
 crate-type = ["lib", "cdylib"]
 
 [features]
-default = []
+default = ["play"]
 closed = ["phire/closed"]
 chat = []
 aa = []
+play = []
 
 [dependencies]
 anyhow = "1.0"

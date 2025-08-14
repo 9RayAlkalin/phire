@@ -139,11 +139,6 @@ impl Note {
         line.object.rotation.now() + if self.above { 0. } else { 180. }
     }
 
-    pub fn plain(&self) -> bool {
-        !self.fake && !matches!(self.kind, NoteKind::Hold { .. }) && self.object.translation.1.keyframes.len() <= 1
-        // && self.ctrl_obj.is_default()
-    }
-
     pub fn update(&mut self, res: &mut Resource, parent_rot: f32, parent_tr: &Matrix, ctrl_obj: &mut CtrlObject, line_height: f32, bpm_list: &mut BpmList, index: usize) {
         self.object.set_time(res.time);
         //let mut _immediate_particle = false;
@@ -151,7 +146,7 @@ impl Note {
             if res.time >= *at {
                 //_immediate_particle = true;
                 let beat = 30. / bpm_list.now_bpm(
-                    if matches!(res.chart_format, ChartFormat::Pgr) { index as f32 } else { self.time }
+                    if bpm_list.per_line_bpm_storage { index as f32 } else { self.time }
                 );
                 //println!("{} {} {}", index, bpm_list.now_bpm(index as f32), beat);
                 *at = res.time + beat / res.config.speed; //HOLD_PARTICLE_INTERVAL
@@ -205,11 +200,7 @@ impl Note {
         self.object.now_rotation().append_nonuniform_scaling(&scale).append_translation(&tr)
     }
 
-    pub fn render(&self, ui: &mut Ui, res: &mut Resource, config: &mut RenderConfig, bpm_list: &mut BpmList, line_set_debug_alpha: bool, line_id: usize) {
-        if matches!(self.judge, JudgeStatus::Judged) && !matches!(self.kind, NoteKind::Hold { .. }) {
-            return;
-        }
-
+    pub fn render(&self, ui: &mut Ui, res: &mut Resource, config: &mut RenderConfig, bpm_list: &mut BpmList, line_set_debug_alpha: bool, line_id: usize, height_above: f32) {
         if config.appear_before.is_finite() {
         //if config.appear_before.is_finite() && !matches!(self.kind, NoteKind::Hold { .. }) {
             let beat = bpm_list.beat(self.time);
@@ -238,15 +229,7 @@ impl Note {
         let height = self.height / res.aspect_ratio * spd;
         let base = height - line_height;
 
-        if res.config.aggressive && matches!(res.chart_format, ChartFormat::Pec) && matches!(self.kind, NoteKind::Hold { .. }) {
-            let h = if self.time <= res.time { line_height } else { height };
-            let bottom = h + self.object.translation.1.now() - line_height;
-            if bottom - line_height > 2. / res.config.chart_ratio {
-                return;
-            }
-        }
-
-        let cover_base = if !config.settings.hold_partial_cover {
+        let cover_base = if !res.info.hold_partial_cover {
             height + self.object.translation.1.now() - line_height
         } else {
             match self.kind {
@@ -462,7 +445,7 @@ impl Note {
             }
         }
         if res.config.chart_debug_note > 0. {
-            if base > 2. / res.config.chart_ratio {
+            if base > height_above || res.time <= 0. {
                 return;
             }
             let above = if self.above { "" } else { " below" };
@@ -502,7 +485,9 @@ impl Note {
                     });
                 }
                 _ => {
-                    if res.time >= self.time { return };
+                    if res.time >= self.time {
+                        return
+                    };
                     let speed = if self.speed == 1. {
                         String::new()
                     } else {

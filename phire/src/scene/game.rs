@@ -2,8 +2,7 @@
 
 crate::tl_file!("game");
 
-use chinese_number::{ChineseCase, ChineseCountMethod, ChineseVariant, NumberToChinese, ChineseToNumber};
-use regex::Regex;
+use chinese_number::{ChineseCase, ChineseCountMethod, ChineseVariant, NumberToChinese};
 use super::{
     draw_background,
     ending::RecordUpdateState,
@@ -11,35 +10,25 @@ use super::{
     request_input, return_input, show_message, take_input, EndingScene, NextScene, Scene,
 };
 use crate::{
-    bin::{BinaryReader, BinaryWriter},
+    bin::BinaryReader,
     config::{Config, Mods},
-    core::{copy_fbo, BadNote, Chart, ChartExtra, Effect, Matrix, Point, Resource, UIElement, Vector, BUFFER_SIZE},
+    core::{BadNote, Chart, ChartExtra, Effect, Point, Resource, UIElement, BUFFER_SIZE},
     ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
     fs::FileSystem, gyro::{Gyro, GYRO, GYROSCOPE_DATA},
     info::{ChartFormat, ChartInfo},
     judge::Judge, parse::{parse_extra, parse_pec, parse_phigros, parse_rpe},
-    particle::EmitterConfig,
-    task::Task,
     time::TimeManager,
     ui::{RectButton, Ui}
 };
 use anyhow::{bail, Context, Result};
 use concat_string::concat_string;
-use lyon::path::Path;
 use macroquad::{prelude::*, window::InternalGlContext};
 use sasa::{Music, MusicParams};
 use serde::{Deserialize, Serialize};
 use std::{
-    any::Any,
-    cell::RefCell,
-    fs::File,
-    io::{Cursor, ErrorKind},
+    io::Cursor,
     ops::{DerefMut, Range},
-    path::PathBuf,
-    process::{Command, Stdio},
-    rc::Rc,
-    sync::{Arc, Mutex},
-    time::Duration,
+    sync::Arc,
 };
 use tracing::{debug, warn};
 
@@ -352,7 +341,6 @@ impl GameScene {
             }
         }?;
         chart.load_textures(fs).await?;
-        chart.settings.hold_partial_cover = info.hold_partial_cover;
         Ok((chart, format))
     }
 
@@ -376,8 +364,8 @@ impl GameScene {
             }
             _ => {}
         }
-        let (mut chart, chart_format) = if let Some((chart, chart_format)) = preload_chart {
-            (chart, chart_format)
+        let (mut chart, format) = if let Some((chart, format)) = preload_chart {
+            (chart, format)
         } else {
             Self::load_chart(fs.deref_mut(), &info, &config).await?
         };
@@ -394,7 +382,6 @@ impl GameScene {
         let info_offset = info.offset;
         let mut res = Resource::new(
             config,
-            chart_format,
             info,
             fs,
             player.as_ref().and_then(|it| it.avatar.clone()),
@@ -542,8 +529,7 @@ impl GameScene {
         if text_width > max_width {
             text_size *= max_width / text_width
         }
-        let ct = text.size(text_size).measure().center();
-        self.chart.with_element(ui, res, UIElement::Score, Some((score_right - ct.x, score_top + ct.y)), Some((score_right, score_top)), |ui, color| {
+        self.chart.with_element(ui, res, UIElement::Score, Some((score_right, score_top)), Some((score_right, score_top)), |ui, color| {
             if res.config.render_ui_score {
                 ui.text(score)
                     .pos(score_right, score_top)
@@ -562,7 +548,7 @@ impl GameScene {
             }
         });
         if res.config.render_ui_pause {
-            self.chart.with_element(ui, res, UIElement::Pause, Some((pause_center.x, pause_center.y)), Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), |ui, color| {
+            self.chart.with_element(ui, res, UIElement::Pause, Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), |ui, color| {
                 let mut r = Rect::new(pause_center.x - pause_w / 2., pause_center.y - pause_h / 2., pause_w, pause_h);
                 //let ct = pause_center.coords;
                 let c = Color { a: color.a * c.a, ..color };
@@ -571,11 +557,8 @@ impl GameScene {
                 ui.fill_rect(r, c);
                 r.x += pause_w * 2.;
                 ui.fill_rect(r, c);
-                ;
             });
         }
-        let unit_h = ui.text("0").size(scale_ratio).measure().h;
-        let combo_y = top + eps * 1.55 - (1. - p) * 0.4;
         if self.judge.combo() >= 3 && res.config.render_ui_combo {
             let combo = if res.config.roman {
                 Self::int_to_roman(self.judge.combo())
@@ -585,47 +568,48 @@ impl GameScene {
             else {
                 self.judge.combo().to_string()
             };
-            let btm = self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y + unit_h / 2. * 0.98)), Some((0., combo_y + unit_h / 2. * 0.98)), |ui, color| {
-                let mut text_size = 0.98 * scale_ratio;
-                let max_width = 0.55 * aspect_ratio;
-                let mut text = ui.text(&combo)
-                    .size(text_size)
-                    .color(Color::new(0., 0., 0., 0.))
-                    .pos(0., combo_y + unit_h / 2. * 0.98)
-                    .anchor(0.5, 0.5);
-                let text_width = text.measure().w;
-                let text_btm = text.draw().bottom();
-                if text_width > max_width {
-                    text_size *= max_width / text_width
-                }
-                ui.text(&combo)
-                .pos(0., top + eps * 1.30 - (1. - p) * 0.4)
-                .anchor(0.5, 0.)
-                .color(Color { a: color.a * c.a, ..color })
+            let mut text_size = 0.98 * scale_ratio;
+            let max_width = 0.55 * aspect_ratio;
+            let mut text = ui.text(&combo)
                 .size(text_size)
-                .draw();
-                text_btm
+                .color(Color::new(0., 0., 0., 0.));
+            let ct = text.measure().center();
+            let text_width = text.measure().w;
+            if text_width > max_width {
+                text_size *= max_width / text_width
+            }
+            let combo_y = top + eps * 1.55 - (1. - p) * 0.4 + ct.y;
+            let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.01;
+            self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y)), Some((0., combo_y)), |ui, color| {
+                ui.text(&combo)
+                    .pos(0., combo_y)
+                    .anchor(0.5, 0.5)
+                    .color(Color { a: color.a * c.a, ..color })
+                    .size(text_size)
+                    .draw();
             });
-            self.chart.with_element(ui, res, UIElement::Combo, Some((0., btm + 0.01 + unit_h / 2. * 0.34)), Some((0., btm + 0.01 + unit_h / 2. * 0.34)), |ui, color| {
+            let mut text = ui.text(&res.config.combo).size(0.34 * scale_ratio);
+            let ct = text.measure().center();
+            self.chart.with_element(ui, res, UIElement::Combo, Some((0., btm + ct.y)), Some((0., btm + ct.y)), |ui, color| {
                 if (cfg!(feature = "play") && res.config.autoplay()) || validate_combo(&res.config.combo) || res.config.combo.len() > 50 {
                     ui.text("AUTOPLAY")
-                    .pos(0., btm + 0.01)
-                    .anchor(0.5, 0.)
-                    .size(0.34 * scale_ratio)
-                    .color(Color { a: color.a * c.a, ..color })
-                    .draw();
+                        .pos(0., btm + ct.y)
+                        .anchor(0.5, 0.5)
+                        .size(0.34 * scale_ratio)
+                        .color(Color { a: color.a * c.a, ..color })
+                        .draw();
                     return;
                 }
                 ui.text(&res.config.combo)
-                    .pos(0., btm + 0.01)
-                    .anchor(0.5, 0.)
+                    .pos(0., btm + ct.y)
+                    .anchor(0.5, 0.5)
                     .size(0.34 * scale_ratio)
                     .color(Color { a: color.a * c.a, ..color })
                     .draw();
             });
         }
         let lf = -aspect_ratio + margin;
-        let bt = -top - eps * 3.5;
+        let bt = -top - eps * 3.5 + (1. - p) * 0.4;
         if res.config.render_ui_name {
             let mut text_size = 0.505 * scale_ratio;
             let mut text = ui.text(&res.info.name).size(text_size);
@@ -634,10 +618,9 @@ impl GameScene {
             if text_width > max_width {
                 text_size *= max_width / text_width
             }
-            let ct = text.size(text_size).measure().center();
-            self.chart.with_element(ui, res, UIElement::Name, Some((lf + ct.x, bt - ct.y)), Some((lf, -top - eps * 2.)), |ui, color| {
+            self.chart.with_element(ui, res, UIElement::Name, Some((lf, bt)), Some((lf, bt)), |ui, color| {
                 ui.text(&res.info.name)
-                    .pos(lf, bt + (1. - p) * 0.4)
+                    .pos(lf, bt)
                     .anchor(0., 1.)
                     .size(text_size)
                     .color(Color { a: color.a * c.a, ..color })
@@ -652,10 +635,9 @@ impl GameScene {
             if text_width > max_width {
                 text_size *= max_width / text_width
             }
-            let ct = text.size(text_size).measure().center();
-            self.chart.with_element(ui, res, UIElement::Level, Some((-lf - ct.x, bt - ct.y)), Some((-lf, -top - eps * 2.)), |ui, color| {
+            self.chart.with_element(ui, res, UIElement::Level, Some((-lf, bt)), Some((-lf, bt)), |ui, color| {
                 ui.text(&res.info.level)
-                    .pos(-lf, bt + (1. - p) * 0.4)
+                    .pos(-lf, bt)
                     .anchor(1., 1.)
                     .size(0.505 * scale_ratio)
                     .color(Color { a: color.a * c.a, ..color })
@@ -776,7 +758,6 @@ impl GameScene {
                         if self.mode == GameMode::Exercise && tm.now() > self.exercise_range.end as f64 && self.exercise_range.end - 0.1 < res.track_length {
                             tm.seek_to(self.exercise_range.start as f64);
                             self.music.seek_to(self.exercise_range.start as f64)?;
-                            pos = self.exercise_range.start as f64;
                         }
                         self.music.play()?;
                         let now = tm.now();
@@ -1026,7 +1007,7 @@ impl Scene for GameScene {
         self.music = Self::new_music(&mut self.res)?;
         self.res.camera.render_target = target;
         tm.speed = self.res.config.speed as _;
-        tm.adjust_time = self.res.config.adjust_time;
+        tm.adjust_time = self.res.config.auto_tweak_offset;
         reset!(self, self.res, tm);
         set_camera(&self.res.camera);
         self.first_in = true;
@@ -1170,7 +1151,7 @@ impl Scene for GameScene {
 
         let time = if self.mode == GameMode::TweakOffset {
             time.max(0.) - self.offset_chart()
-        } else if self.res.config.adjust_time {
+        } else if self.res.config.auto_tweak_offset {
             (time - self.offset() - get_latency(&self.res.audio, &self.res.frame_times) as f32).max(0.)
         } else {
             (time - self.offset()).max(0.)
@@ -1523,7 +1504,7 @@ impl Scene for GameScene {
             self.gl.flush();
         }
 
-        if self.res.config.adjust_time {
+        if self.res.config.auto_tweak_offset {
             push_frame_time(&mut self.res.frame_times, tm.real_time());
         }
         

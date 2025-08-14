@@ -29,10 +29,11 @@ pub enum ChallengeModeColor {
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     #[serde(rename = "adjust_time_new")]
-    pub adjust_time: bool,
+    pub auto_tweak_offset: bool,
     pub aggressive: bool,
     pub aspect_ratio: Option<f32>,
     pub audio_buffer_size: Option<u32>,
+    #[cfg(target_os = "android")]
     pub audio_compatibility: bool,
     pub challenge_color: ChallengeModeColor,
     pub challenge_rank: u32,
@@ -101,13 +102,20 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            adjust_time: false,
+            #[cfg(not(feature = "play"))]
+            auto_tweak_offset: false,
+            #[cfg(feature = "play")]
+            auto_tweak_offset: true,
+            #[cfg(not(feature = "play"))]
             aggressive: false,
+            #[cfg(feature = "play")]
+            aggressive: true,
             aspect_ratio: None,
             audio_buffer_size: None,
+            #[cfg(target_os = "android")]
             audio_compatibility: false,
             challenge_color: ChallengeModeColor::Rainbow,
-            challenge_rank: 45,
+            challenge_rank: 3,
             chart_debug_line: 0.0,
             chart_debug_note: 0.0,
             chart_ratio: 1.0,

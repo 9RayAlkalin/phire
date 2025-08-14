@@ -146,7 +146,7 @@ thread_local! {
 impl Scene for EndingScene {
     fn enter(&mut self, tm: &mut TimeManager, target: Option<RenderTarget>) -> Result<()> {
         tm.reset();
-        tm.seek_to(-0.4);
+        tm.seek_to(0.0);
         self.target = target;
         Ok(())
     }

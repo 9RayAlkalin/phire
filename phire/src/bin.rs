@@ -213,10 +213,10 @@ impl BinaryData for Color {
     }
 
     fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {
-        w.write_val((self.r * 256.) as u8)?;
-        w.write_val((self.g * 256.) as u8)?;
-        w.write_val((self.b * 256.) as u8)?;
-        w.write_val((self.a * 256.) as u8)?;
+        w.write_val((self.r * 255.) as u8)?;
+        w.write_val((self.g * 255.) as u8)?;
+        w.write_val((self.b * 255.) as u8)?;
+        w.write_val((self.a * 255.) as u8)?;
         Ok(())
     }
 }
@@ -513,14 +513,12 @@ impl BinaryData for JudgeLine {
 impl BinaryData for ChartSettings {
     fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
         Ok(Self {
-            pe_alpha_extension: r.read::<u8>()? == 1,
-            hold_partial_cover: r.read::<u8>()? == 1,
+            pe_alpha_extension: r.read()?,
         })
     }
 
     fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {
-        w.write_val(self.pe_alpha_extension as u8)?;
-        w.write_val(self.hold_partial_cover as u8)?;
+        w.write_val(self.pe_alpha_extension)?;
         Ok(())
     }
 }
