@@ -40,6 +40,10 @@ fn f32_one() -> f32 {
     1.
 }
 
+fn i32_one() -> i32 {
+    1
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RPEEvent<T = f32> {
@@ -78,6 +82,7 @@ pub struct RPESpeedEvent {
     easing_left: f32,
     #[serde(default = "f32_one")]
     easing_right: f32,
+    #[serde(default = "i32_one")]
     easing_type: i32,
 }
 
