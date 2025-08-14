@@ -14,6 +14,7 @@ use crate::{
 use anyhow::{Context, Result};
 use image::{codecs::gif, AnimationDecoder, DynamicImage, ImageError};
 use macroquad::prelude::{Color, WHITE};
+use ordered_float::NotNan;
 use sasa::AudioClip;
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashMap, future::IntoFuture, rc::Rc, str::FromStr, time::Duration};
@@ -73,6 +74,11 @@ pub struct RPESpeedEvent {
     end_time: Triple,
     start: f32,
     end: f32,
+    #[serde(default = "f32_zero")]
+    easing_left: f32,
+    #[serde(default = "f32_one")]
+    easing_right: f32,
+    easing_type: i32,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -238,8 +244,29 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
         .map(|it| {
             let mut kfs = Vec::new();
             for e in it {
-                kfs.push(Keyframe::new(r.time(&e.start_time), e.start, 2));
-                kfs.push(Keyframe::new(r.time(&e.end_time), e.end, 0));
+                let start_beats = e.start_time.beats();
+                let end_beats = e.end_time.beats();
+                let tween = e.easing_type.max(1) as usize;
+                let tween_map = {
+                    let tween = RPE_TWEEN_MAP.get(tween).copied().unwrap_or(RPE_TWEEN_MAP[0]);
+                    if e.easing_left.abs() < EPS && (e.easing_right - 1.0).abs() < EPS {
+                        StaticTween::get_rc(tween)
+                    } else {
+                        Rc::new(ClampedTween::new(tween, e.easing_left..e.easing_right))
+                    }
+                };
+                kfs.push(Keyframe::new(r.time_beats(start_beats), e.start, 2));
+                if tween > 1 { // wtf rpe
+                    debug!("Speed event segmented: {} - {}", e.start_time.display(), e.end_time.display());
+                    let mut now_beats = start_beats;
+                    while end_beats - now_beats > 0.03125 {
+                        now_beats += 0.03125;
+                        let t = (now_beats - start_beats) / (end_beats - start_beats);
+                        let now = f32::tween(&e.start, &e.end, tween_map.y(t));
+                        kfs.push(Keyframe::new(r.time_beats(now_beats), now, 2));
+                    }
+                }
+                kfs.push(Keyframe::new(r.time_beats(end_beats), e.end, 0));
             }
             AnimFloat::new(kfs)
         })
