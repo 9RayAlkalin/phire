@@ -141,6 +141,7 @@ impl JudgeLineCache {
 
 pub struct JudgeLine {
     pub object: Object,
+    pub color: Anim<Color>,
     pub ctrl_obj: RefCell<CtrlObject>,
     pub kind: JudgeLineKind,
     pub height: AnimFloat,
@@ -184,7 +185,7 @@ impl JudgeLine {
             }
             _ => {}
         }
-        self.object.color.set_time(res.time);
+        self.color.set_time(res.time);
 
         let not_judge = |index: usize| {
             match self.notes[index].kind {
@@ -254,7 +255,7 @@ impl JudgeLine {
 
     pub fn render(&self, ui: &mut Ui, res: &mut Resource, lines: &[JudgeLine], bpm_list: &mut BpmList, settings: &ChartSettings, id: usize) {
         let alpha = self.object.now_alpha();
-        let color = self.object.color.now_opt();
+        let color = self.color.now_opt();
         res.with_model(self.now_transform(res, lines), |res| {
             res.with_model(self.object.now_scale(), |res| {
                 res.apply_model(|res| match &self.kind {

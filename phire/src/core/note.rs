@@ -2,7 +2,7 @@ use super::{
     chart::ChartSettings, BpmList, CtrlObject, JudgeLine, Matrix, Object, Point, Resource, Vector
 };
 use crate::{
-    core::HEIGHT_RATIO, ext::parse_alpha, info::ChartFormat, judge::JudgeStatus, parse::RPE_HEIGHT, ui::Ui
+    core::{Anim, HEIGHT_RATIO}, ext::parse_alpha, info::ChartFormat, judge::JudgeStatus, parse::RPE_HEIGHT, ui::Ui
 };
 
 
@@ -47,6 +47,8 @@ pub struct Note {
     pub fake: bool,
     pub judge: JudgeStatus,
     pub judge_scale: f32,
+    pub color: Anim<Color>,
+    pub hit_fx_color: Anim<Color>,
     pub protected: bool,
 }
 
@@ -150,7 +152,9 @@ impl Note {
                 );
                 //println!("{} {} {}", index, bpm_list.now_bpm(index as f32), beat);
                 *at = res.time + beat / res.config.speed; //HOLD_PARTICLE_INTERVAL
-                Some(if perfect && !res.config.all_good && !res.config.all_bad {
+                Some(if let Some(color) = self.hit_fx_color.now_opt() {
+                    color
+                } else if perfect && !res.config.all_good && !res.config.all_bad {
                     res.res_pack.info.fx_perfect()
                 } else {
                     res.res_pack.info.fx_good()
@@ -212,7 +216,7 @@ impl Note {
 
         let ctrl_obj = &mut config.ctrl_obj;
         self.init_ctrl_obj(ctrl_obj, config.line_height);
-        let mut color = self.object.now_color();
+        let mut color = self.color.now_opt().unwrap_or(WHITE);
         let alpha = self.object.now_alpha().max(0.);
         color.a = parse_alpha(color.a * alpha, 1.0, 0.2, res.config.chart_debug_note > 0.);
 

@@ -140,8 +140,10 @@ pub struct RPENote {
     speed: f32,
     is_fake: u8,
     visible_time: f32,
-    #[serde(default)]
-    tint: RGBColor,
+    #[serde(default, rename = "tint")]
+    color: RGBColor,
+    #[serde(rename = "tintHitEffects")]
+    hit_fx_color: Option<RGBColor>,
     #[serde(default="f32_one", rename = "judgeArea")]
     judge_scale: f32,
 }
@@ -420,14 +422,6 @@ async fn parse_notes(
         };
         notes.push(Note {
             object: Object {
-                color: {
-                    let color = Color::from(note.tint);
-                    if matches!(color, WHITE) {
-                        Anim::default()
-                    } else {
-                        Anim::fixed(color)
-                    }
-                },
                 alpha: if note.visible_time >= time {
                     if note.alpha >= 255 {
                         AnimFloat::default()
@@ -457,6 +451,21 @@ async fn parse_notes(
             fake: note.is_fake != 0,
             judge: JudgeStatus::NotJudged,
             judge_scale: note.judge_scale,
+            color: {
+                let color = Color::from(note.color);
+                if matches!(color, WHITE) {
+                    Anim::default()
+                } else {
+                    Anim::fixed(color)
+                }
+            },
+            hit_fx_color: {
+                if let Some(color) = note.hit_fx_color {
+                    Anim::fixed(Color::from(color))
+                } else {
+                    Anim::default()
+                }
+            },
             protected: false,
         })
     }
@@ -510,11 +519,6 @@ async fn parse_judge_line(
     let cache = JudgeLineCache::new(&mut notes);
     Ok(JudgeLine {
         object: Object {
-            color: if let Some(events) = rpe.extended.as_ref().and_then(|e| e.color_events.as_ref()) {
-                parse_events(r, events, Some(WHITE), bezier_map).with_context(|| ptl!("color-events-parse-failed"))?
-            } else {
-                Anim::default()
-            },
             alpha: events_with_factor(r, &event_layers, |it| &it.alpha_events, 1. / 255., "alpha", bezier_map)?,
             rotation: events_with_factor(r, &event_layers, |it| &it.rotate_events, -1., "rotate", bezier_map)?,
             translation: AnimVector(
@@ -565,6 +569,11 @@ async fn parse_judge_line(
                     .transpose()?
                     .unwrap_or_default()
             },
+        },
+        color: if let Some(events) = rpe.extended.as_ref().and_then(|e| e.color_events.as_ref()) {
+            parse_events(r, events, Some(WHITE), bezier_map).with_context(|| ptl!("color-events-parse-failed"))?
+        } else {
+            Anim::default()
         },
         ctrl_obj: RefCell::new(CtrlObject {
             alpha: parse_ctrl_events(&rpe.alpha_control, "alpha"),
