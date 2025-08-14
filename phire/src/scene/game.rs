@@ -579,7 +579,7 @@ impl GameScene {
                 text_size *= max_width / text_width
             }
             let combo_y = top + eps * 1.55 - (1. - p) * 0.4 + ct.y;
-            let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.02;
+            let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.015;
             self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y)), Some((0., combo_y)), |ui, color| {
                 ui.text(&combo)
                     .pos(0., combo_y)
