@@ -141,7 +141,7 @@ pub struct RPENote {
     is_fake: u8,
     visible_time: f32,
     #[serde(default)]
-    color: RGBColor,
+    hint: RGBColor,
     #[serde(default="f32_one", rename = "judgeArea")]
     judge_scale: f32,
 }
@@ -421,7 +421,7 @@ async fn parse_notes(
         notes.push(Note {
             object: Object {
                 color: {
-                    let color = Color::from(note.color);
+                    let color = Color::from(note.hint);
                     if matches!(color, WHITE) {
                         Anim::default()
                     } else {
