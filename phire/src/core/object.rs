@@ -1,4 +1,4 @@
-use super::{Anim, AnimFloat, AnimVector, Color, Matrix, Resource, Vector};
+use super::{AnimFloat, AnimVector, Matrix, Resource, Vector};
 use macroquad::prelude::*;
 use nalgebra::Rotation2;
 

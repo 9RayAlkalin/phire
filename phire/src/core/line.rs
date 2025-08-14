@@ -3,7 +3,6 @@ use crate::{
     config::Mods,
     core::NoteKind,
     ext::{get_viewport, parse_alpha, NotNanExt, SafeTexture},
-    info::ChartFormat,
     judge::{JudgeStatus, LIMIT_BAD},
     ui::Ui,
 };

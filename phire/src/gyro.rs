@@ -3,7 +3,6 @@ use std::sync::Mutex;
 use std::f32;
 use nalgebra::{Unit, UnitQuaternion, Vector3};
 use lazy_static::lazy_static;
-use tracing::debug;
 
 use crate::config::Config;
 

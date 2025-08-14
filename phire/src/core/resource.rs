@@ -3,7 +3,7 @@ use crate::{
     config::Config,
     ext::{create_audio_manger, nalgebra_to_glm, SafeTexture},
     fs::FileSystem,
-    info::{ChartFormat, ChartInfo},
+    info::ChartInfo,
     particle::{AtlasConfig, ColorCurve, Emitter, EmitterConfig, ParticleShape},
 };
 use anyhow::{bail, Context, Result};
