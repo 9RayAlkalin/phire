@@ -815,11 +815,21 @@ impl Judge {
             }
             if match judgement {
                 Judgement::Perfect => {
-                    res.with_model(line_tr * note.object.now(res), |res| res.emit_at_origin(note.rotation(line), res.res_pack.info.fx_perfect()));
+                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
+                        color
+                    } else {
+                        res.res_pack.info.fx_perfect()
+                    };
+                    res.with_model(line_tr * note.object.now(res), |res| res.emit_at_origin(note.rotation(line), color));
                     true
                 }
                 Judgement::Good => {
-                    res.with_model(line_tr * note.object.now(res), |res| res.emit_at_origin(note.rotation(line), res.res_pack.info.fx_good()));
+                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
+                        color
+                    } else {
+                        res.res_pack.info.fx_good()
+                    };
+                    res.with_model(line_tr * note.object.now(res), |res| res.emit_at_origin(note.rotation(line), color));
                     true
                 }
                 Judgement::Bad => {
@@ -922,11 +932,17 @@ impl Judge {
                 (note.object.now(res), note.kind.clone(), note.hitsound.clone())
             };
             let line = &chart.lines[line_id];
+            let note = &line.notes[id as usize];
             match note_kind {
                 NoteKind::Click => {
+                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
+                        color
+                    } else {
+                        fx_color
+                    };
                     self.commit(t, judge_type, line_id as _, id, 0.);
                     res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
-                        res.emit_at_origin(line.notes[id as usize].rotation(line), fx_color)
+                        res.emit_at_origin(line.notes[id as usize].rotation(line), color)
         
                     });
                 }
@@ -934,9 +950,14 @@ impl Judge {
                     self.commit(t, judge_type_hold, line_id as _, id, 0.);
                 }
                 _ => {
+                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
+                        color
+                    } else {
+                        res.res_pack.info.fx_perfect()
+                    };
                     self.commit(t, Judgement::Perfect, line_id as _, id, 0.);
                     res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
-                        res.emit_at_origin(line.notes[id as usize].rotation(line), res.res_pack.info.fx_perfect())
+                        res.emit_at_origin(line.notes[id as usize].rotation(line), color)
         
                     });
                 },
