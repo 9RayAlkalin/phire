@@ -579,7 +579,7 @@ impl GameScene {
                 text_size *= max_width / text_width
             }
             let combo_y = top + eps * 1.55 - (1. - p) * 0.4 + ct.y;
-            let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.01;
+            let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.02;
             self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y)), Some((0., combo_y)), |ui, color| {
                 ui.text(&combo)
                     .pos(0., combo_y)
@@ -670,7 +670,7 @@ impl GameScene {
                     Rect::new(-aspect_ratio, top, dest, height),
                     Color{ a: color.a * c.a, ..color },
                 );
-                ui.fill_rect(Rect::new(-aspect_ratio + dest - hw, top, hw * 2., height), Color::new(1., 1., 1., color.a * c.a));
+                ui.fill_rect(Rect::new(-aspect_ratio + dest - hw, top, hw * 2., height), Color::new(0.95, 0.95, 0.95, color.a * c.a));
             });
         }
         Ok(())
