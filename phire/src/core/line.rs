@@ -97,7 +97,7 @@ impl JudgeLineCache {
             (
                 !it.above,
                 it.speed.not_nan(),
-                (it.height + it.object.translation.1.now() * it.speed).not_nan(),
+                (it.height as f32 + it.object.translation.1.now() * it.speed).not_nan(),
             )
         });
         
@@ -143,7 +143,7 @@ pub struct JudgeLine {
     pub color: Anim<Color>,
     pub ctrl_obj: RefCell<CtrlObject>,
     pub kind: JudgeLineKind,
-    pub height: AnimFloat,
+    pub height: Anim<f64>,
     pub incline: AnimFloat,
     pub notes: Vec<Note>,
     pub parent: Option<usize>,
@@ -470,7 +470,7 @@ impl JudgeLine {
                                     config.line_height
                                 }
                             };
-                            let note_height = (note.height - line_height + note.object.translation.1.now()) / res.aspect_ratio * speed;
+                            let note_height = ((note.height - line_height) as f32 + note.object.translation.1.now()) / res.aspect_ratio * speed;
                             if note_height < height_below {
                                 continue;
                             }
@@ -507,7 +507,7 @@ impl JudgeLine {
                                         config.line_height
                                     }
                                 };
-                                let note_height = (note.height - line_height + note.object.translation.1.now()) / res.aspect_ratio * speed;
+                                let note_height = ((note.height - line_height) as f32 + note.object.translation.1.now()) / res.aspect_ratio * speed;
                                 if note_height < -height_above {
                                     continue;
                                 }
@@ -551,20 +551,6 @@ impl JudgeLine {
                         } else {
                             String::new()
                         };
-                        let line_height_ulp = {
-                            if !config.line_height.is_nan() & !config.line_height.is_infinite() {
-                                f32::EPSILON * config.line_height.abs()
-                            } else {
-                                0.0
-                            }
-                        };
-                        let line_height_ulp_string = {
-                                if line_height_ulp > 0.0018518519 {
-                                    format!("(Speed too high! ULP: {:.4})", line_height_ulp)
-                                } else {
-                                    String::new()
-                                }
-                        };
                         let z_index = {
                             if self.z_index == 0 {
                                 String::new()
@@ -585,14 +571,8 @@ impl JudgeLine {
                         } else {
                             format!(" anc:{} {}", self.anchor[0], self.anchor[1])
                         };
-                        let color = if line_height_ulp > 0.018518519 { // 10px error in 1080P
-                            Color::new(1., 0., 0., parse_alpha(alpha, res.alpha, 0.15, res.config.chart_debug_line > 0.))
-                        } else if line_height_ulp > 0.0018518519 { // 1px error in 1080P
-                            Color::new(1., 1., 0., parse_alpha(alpha, res.alpha, 0.15, res.config.chart_debug_line > 0.))
-                        } else {
-                            Color::new(1., 1., 1., parse_alpha(alpha, res.alpha, 0.15, res.config.chart_debug_line > 0.))
-                        };
-                        ui.text(format!("[{}]{} h:{:.2}{}{}{}{}{}", id, parent, config.line_height, line_height_ulp_string, z_index, attach_ui, anchor, kind))
+                        let color = Color::new(1., 1., 1., parse_alpha(alpha, res.alpha, 0.15, res.config.chart_debug_line > 0.));
+                        ui.text(format!("[{}]{} h:{:.2}{}{}{}{}", id, parent, config.line_height, z_index, attach_ui, anchor, kind))
                         .pos(0., -res.config.chart_debug_line * 0.1)
                         .anchor(0.5, 1.)
                         .size(res.config.chart_debug_line)

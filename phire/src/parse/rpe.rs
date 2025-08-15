@@ -76,8 +76,8 @@ pub struct RPECtrlEvent {
 pub struct RPESpeedEvent {
     start_time: Triple,
     end_time: Triple,
-    start: f32,
-    end: f32,
+    start: f64,
+    end: f64,
     #[serde(default = "f32_zero")]
     easing_left: f32,
     #[serde(default = "f32_one")]
@@ -240,13 +240,13 @@ fn parse_events<T: Tweenable, V: Clone + Into<T>>(
     Ok(Anim::new(kfs))
 }
 
-fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> Result<AnimFloat> {
+fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> Result<Anim<f64>> {
     let rpe: Vec<&Vec<RPESpeedEvent>> = rpe.iter().filter_map(|it| it.speed_events.as_ref()).collect();
     if rpe.is_empty() {
         // TODO or is it?
-        return Ok(AnimFloat::default());
+        return Ok(Anim::<f64>::default());
     };
-    let anis: Vec<AnimFloat> = rpe
+    let anis: Vec<Anim<f64>> = rpe
         .into_iter()
         .map(|it| {
             let mut kfs = Vec::new();
@@ -269,21 +269,21 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
                     while end_beats - now_beats > 0.03125 {
                         now_beats += 0.03125;
                         let t = (now_beats - start_beats) / (end_beats - start_beats);
-                        let now = f32::tween(&e.start, &e.end, tween_map.y(t));
+                        let now = f64::tween(&e.start, &e.end, tween_map.y(t));
                         kfs.push(Keyframe::new(r.time_beats(now_beats), now, 2));
                     }
                 }
                 kfs.push(Keyframe::new(r.time_beats(end_beats), e.end, 0));
             }
-            AnimFloat::new(kfs)
+            Anim::<f64>::new(kfs)
         })
         .collect();
     let mut pts: Vec<NotNan<f32>> = anis.iter().flat_map(|it| it.keyframes.iter().map(|it| it.time.not_nan())).collect();
     pts.push(max_time.not_nan());
     pts.sort();
     pts.dedup();
-    let mut sani = AnimFloat::chain(anis);
-    sani.map_value(|v| v * SPEED_RATIO);
+    let mut sani = Anim::<f64>::chain(anis);
+    sani.map_value(|v| v * SPEED_RATIO as f64);
     for i in 0..(pts.len() - 1) {
         let now_time = *pts[i];
         let next_time = *pts[i + 1];
@@ -293,7 +293,7 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
         sani.set_previous();
         let end_speed = sani.now();
         if speed.signum() * end_speed.signum() < 0. {
-            pts.push(f32::tween(&now_time, &next_time, speed / (speed - end_speed)).not_nan());
+            pts.push(f32::tween(&now_time, &next_time, (speed / (speed - end_speed)) as f32).not_nan());
         }
     }
     pts.sort();
@@ -310,25 +310,25 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
         sani.set_time(next_time);
         sani.set_previous();
         let end_speed = sani.now();
-        kfs.push(if (speed - end_speed).abs() < EPS {
+        kfs.push(if (speed - end_speed).abs() < EPS as f64 {
             Keyframe::new(now_time, height, 2)
         } else if speed.abs() > end_speed.abs() {
             Keyframe {
                 time: now_time,
                 value: height,
-                tween: Rc::new(ClampedTween::new(7 /*quadOut*/, 0.0..(1. - end_speed / speed))),
+                tween: Rc::new(ClampedTween::new(7 /*quadOut*/, 0.0..(1. - end_speed / speed) as f32)),
             }
         } else {
             Keyframe {
                 time: now_time,
                 value: height,
-                tween: Rc::new(ClampedTween::new(6 /*quadIn*/, (speed / end_speed)..1.)),
+                tween: Rc::new(ClampedTween::new(6 /*quadIn*/, (speed / end_speed) as f32..1.)),
             }
         });
-        height += (speed + end_speed) * (next_time - now_time) / 2.;
+        height += (speed + end_speed) * (next_time - now_time) as f64 / 2.;
     }
     kfs.push(Keyframe::new(max_time, height, 0));
-    Ok(AnimFloat::new(kfs))
+    Ok(Anim::<f64>::new(kfs))
 }
 
 fn parse_gif_events<V: Clone + Into<f32>>(r: &mut BpmList, rpe: &[RPEEvent<V>], bezier_map: &BezierMap, gif: &GifFrames) -> Result<AnimFloat> {
@@ -375,7 +375,7 @@ async fn parse_notes(
     r: &mut BpmList,
     rpe: Vec<RPENote>,
     fs: &mut dyn FileSystem,
-    height: &mut AnimFloat,
+    height: &mut Anim<f64>,
     hitsounds: &mut HitSoundMap,
 ) -> Result<Vec<Note>> {
     let mut notes = Vec::new();

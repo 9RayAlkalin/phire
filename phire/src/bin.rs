@@ -164,6 +164,16 @@ impl BinaryData for f32 {
     }
 }
 
+impl BinaryData for f64 {
+    fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
+        Ok(r.0.read_f64::<LE>()?)
+    }
+
+    fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {
+        Ok(w.0.write_f64::<LE>(*self)?)
+    }
+}
+
 impl BinaryData for u32 {
     fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
         Ok(r.0.read_u32::<LE>()?)

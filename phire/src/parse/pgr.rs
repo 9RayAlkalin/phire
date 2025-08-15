@@ -31,7 +31,7 @@ struct PgrEvent {
 struct PgrSpeedEvent {
     pub start_time: f32,
     pub end_time: f32,
-    pub value: f32,
+    pub value: f64,
 }
 
 #[derive(Deserialize)]
@@ -43,7 +43,7 @@ pub struct PgrNote {
     position_x: f32,
     hold_time: f32,
     speed: f32,
-    #[allow(unused)] floor_position: f32,
+    #[allow(unused)] floor_position: f64,
 }
 
 #[derive(Deserialize)]
@@ -92,27 +92,27 @@ macro_rules! validate_events {
     };
 }
 
-fn parse_speed_events(r: f32, mut pgr: Vec<PgrSpeedEvent>, max_time: f32) -> Result<(AnimFloat, AnimFloat)> {
+fn parse_speed_events(r: f32, mut pgr: Vec<PgrSpeedEvent>, max_time: f32) -> Result<(AnimFloat, Anim<f64>)> {
     validate_events!(pgr);
     if pgr[0].start_time != 0. { pgr[0].start_time = 0. }
     let mut kfs = Vec::new();
     let mut pos = 0.;
     kfs.extend(pgr[..pgr.len().saturating_sub(1)].iter().map(|it| {
         let from_pos = pos;
-        pos += (it.end_time - it.start_time) * r * it.value;
+        pos += ((it.end_time - it.start_time) * r) as f64 * it.value;
         Keyframe::new(it.start_time * r, from_pos, 2)
     }));
     let last = pgr.last().unwrap();
     kfs.push(Keyframe::new(last.start_time * r, pos, 2));
-    kfs.push(Keyframe::new(max_time, pos + (max_time - last.start_time * r) * last.value, 0));
+    kfs.push(Keyframe::new(max_time, pos + (max_time - last.start_time * r) as f64 * last.value, 0));
     for kf in &mut kfs {
-        kf.value /= HEIGHT_RATIO;
+        kf.value /= HEIGHT_RATIO as f64;
     }
     Ok((
         AnimFloat::new(pgr.iter().map(
-            |it| Keyframe::new(it.start_time * r, it.value, 0)
+            |it| Keyframe::new(it.start_time * r, it.value as f32, 0)
         ).collect()), 
-        AnimFloat::new(kfs)
+        Anim::<f64>::new(kfs)
     ))
 }
 
@@ -187,7 +187,7 @@ fn parse_move_events_fv1(r: f32, mut pgr: Vec<PgrEvent>) -> Result<AnimVector> {
     Ok(AnimVector(AnimFloat::new(kf1), AnimFloat::new(kf2)))
 }
 
-fn parse_notes(r: f32, mut pgr: Vec<PgrNote>, _speed: &mut AnimFloat, height: &mut AnimFloat, above: bool) -> Result<Vec<Note>> {
+fn parse_notes(r: f32, mut pgr: Vec<PgrNote>, _speed: &mut AnimFloat, height: &mut Anim<f64>, above: bool) -> Result<Vec<Note>> {
     // is_sorted is unstable...
     if pgr.is_empty() {
         return Ok(Vec::new());
@@ -205,7 +205,7 @@ fn parse_notes(r: f32, mut pgr: Vec<PgrNote>, _speed: &mut AnimFloat, height: &m
                 2 => NoteKind::Drag,
                 3 => {
                     let end_time = (pgr.time + pgr.hold_time) * r;
-                    let end_height = height + (pgr.hold_time * pgr.speed * r / HEIGHT_RATIO);
+                    let end_height = height + (pgr.hold_time * pgr.speed * r / HEIGHT_RATIO) as f64;
                     let end_speed = Some(pgr.speed);
                     NoteKind::Hold { end_time, end_height, end_speed }
                 }
