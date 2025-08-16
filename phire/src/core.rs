@@ -13,7 +13,7 @@ mod anim;
 pub use anim::{Anim, AnimFloat, AnimVector, Keyframe};
 
 mod chart;
-pub use chart::{Chart, ChartExtra, ChartSettings, HitSoundMap};
+pub use chart::{Chart, ChartSettings, HitSoundMap};
 
 mod effect;
 pub use effect::{Effect, Uniform};
@@ -26,7 +26,7 @@ use macroquad::prelude::set_pc_assets_folder;
 pub use note::{BadNote, Note, NoteKind, HitSound, RenderConfig};
 
 mod object;
-pub use object::{CtrlObject, Object};
+pub use object::Object;
 
 mod render;
 pub use render::{copy_fbo, internal_id, MSRenderTarget};

@@ -487,7 +487,7 @@ impl Judge {
         let mut pos = Vec::<Vec<Option<Point>>>::with_capacity(chart.lines.len());
         for id in 0..pos.capacity() {
             chart.lines[id].object.set_time(t);
-            let inv = chart.lines[id].now_transform(res, &chart.lines).try_inverse().unwrap();
+            let inv = chart.lines[id].now_transform(res).try_inverse().unwrap();
             pos.push(
                 touches
                     .iter()
@@ -543,7 +543,7 @@ impl Judge {
                     x.set_time(t);
                     let posx = pos.x;
                     let dist = (x.now() - posx).abs();
-                    if dist > (x_diff_max - NOTE_WIDTH_RATIO_BASE) + NOTE_WIDTH_RATIO_BASE * note.judge_scale {
+                    if dist > x_diff_max {
                         continue;
                     }
                     if dt.abs() >
@@ -583,7 +583,7 @@ impl Judge {
                     matches!(note.kind, NoteKind::Drag | NoteKind::Flick)
                         && judge_time >= -LIMIT_GOOD
                         && judge_time <= LIMIT_BAD
-                        && (x.now() - posx).abs() <= (x_diff_max - NOTE_WIDTH_RATIO_BASE) + NOTE_WIDTH_RATIO_BASE * note.judge_scale // note_dist <= x_diff_max
+                        && (x.now() - posx).abs() <= x_diff_max // note_dist <= x_diff_max
                         && !note.protected
                         && !note.fake
                 };
@@ -698,7 +698,7 @@ impl Judge {
             line.object.set_time(t);
             for id in &idx[*st..] {
                 let note = &mut line.notes[*id as usize];
-                let x_diff_max = (x_diff_max - NOTE_WIDTH_RATIO_BASE) + NOTE_WIDTH_RATIO_BASE * note.judge_scale;
+                let x_diff_max = x_diff_max;
                 if let NoteKind::Hold { end_time, .. } = &note.kind {
                     if let JudgeStatus::Hold(.., ref mut pre_judge, ref mut up_time) = note.judge {
                         if (*end_time - t) / spd <= LIMIT_BAD {
@@ -796,7 +796,7 @@ impl Judge {
             note.object.set_time(t);
             let line = &chart.lines[line_id];
             let note = &line.notes[id as usize];
-            let line_tr = line.now_transform(res, &chart.lines);
+            let line_tr = line.now_transform(res);
             self.commit(
                 t,
                 judgement,
@@ -815,20 +815,12 @@ impl Judge {
             }
             if match judgement {
                 Judgement::Perfect => {
-                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
-                        color
-                    } else {
-                        res.res_pack.info.fx_perfect()
-                    };
+                    let color = res.res_pack.info.fx_perfect();
                     res.with_model(line_tr * note.object.now(res), |res| res.emit_at_origin(note.rotation(line), color));
                     true
                 }
                 Judgement::Good => {
-                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
-                        color
-                    } else {
-                        res.res_pack.info.fx_good()
-                    };
+                    let color = res.res_pack.info.fx_good();
                     res.with_model(line_tr * note.object.now(res), |res| res.emit_at_origin(note.rotation(line), color));
                     true
                 }
@@ -842,13 +834,9 @@ impl Judge {
                                 if !note.above {
                                     mat.append_nonuniform_scaling_mut(&Vector::new(1., -1.));
                                 }
-                                let incline_sin = line.incline.now_opt().map(|it| it.to_radians().sin()).unwrap_or_default();
                                 mat *= note.now_transform(
                                     res,
-                                    &line.ctrl_obj.borrow_mut(),
                                     (note.height - line.height.now()) / res.aspect_ratio * note.speed,
-                                    incline_sin,
-                                    true, true
                                 );
                                 mat
                             },
@@ -932,17 +920,11 @@ impl Judge {
                 (note.object.now(res), note.kind.clone(), note.hitsound.clone())
             };
             let line = &chart.lines[line_id];
-            let note = &line.notes[id as usize];
             match note_kind {
                 NoteKind::Click => {
-                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
-                        color
-                    } else {
-                        fx_color
-                    };
                     self.commit(t, judge_type, line_id as _, id, 0.);
-                    res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
-                        res.emit_at_origin(line.notes[id as usize].rotation(line), color)
+                    res.with_model(line.now_transform(res) * note_transform, |res| {
+                        res.emit_at_origin(line.notes[id as usize].rotation(line), fx_color)
         
                     });
                 }
@@ -950,14 +932,9 @@ impl Judge {
                     self.commit(t, judge_type_hold, line_id as _, id, 0.);
                 }
                 _ => {
-                    let color = if let Some(color) = note.hit_fx_color.now_opt() {
-                        color
-                    } else {
-                        res.res_pack.info.fx_perfect()
-                    };
                     self.commit(t, Judgement::Perfect, line_id as _, id, 0.);
-                    res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
-                        res.emit_at_origin(line.notes[id as usize].rotation(line), color)
+                    res.with_model(line.now_transform(res) * note_transform, |res| {
+                        res.emit_at_origin(line.notes[id as usize].rotation(line), res.res_pack.info.fx_perfect())
         
                     });
                 },

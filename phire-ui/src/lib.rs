@@ -522,3 +522,9 @@ pub unsafe extern "C" fn Java_quad_1native_QuadNative_updateGravity(
         gyro_data.update_gravity(Vector3::new(roll, pitch, yaw));
     }
 }
+
+#[cfg(all(target_os = "android"))]
+#[no_mangle]
+pub extern "C" fn Java_quad_1native_QuadNative_updateContext() {
+    // wtfbro
+}

@@ -1,14 +1,13 @@
-use super::{chart::ChartSettings, object::CtrlObject, Anim, AnimFloat, BpmList, Matrix, Note, Object, Point, RenderConfig, Resource, Vector};
+use super::{chart::ChartSettings, Anim, AnimFloat, BpmList, Matrix, Note, Object, Point, RenderConfig, Resource, Vector};
 use crate::{
     config::Mods,
     core::NoteKind,
-    ext::{get_viewport, parse_alpha, NotNanExt, SafeTexture},
+    ext::{parse_alpha, NotNanExt, SafeTexture},
     judge::{JudgeStatus, LIMIT_BAD},
     ui::Ui,
 };
 use macroquad::prelude::*;
-use miniquad::{RenderPass, Texture, TextureParams, TextureWrap};
-use nalgebra::Rotation2;
+use miniquad::{RenderPass};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 
@@ -140,20 +139,11 @@ impl JudgeLineCache {
 
 pub struct JudgeLine {
     pub object: Object,
-    pub color: Anim<Color>,
-    pub ctrl_obj: RefCell<CtrlObject>,
-    pub kind: JudgeLineKind,
     pub height: AnimFloat,
-    pub incline: AnimFloat,
     pub notes: Vec<Note>,
-    pub parent: Option<usize>,
-    pub rotate_with_parent: bool,
-    pub z_index: i32,
     pub show_below: bool,
-    pub attach_ui: Option<UIElement>,
 
     pub cache: JudgeLineCache,
-    pub anchor: [f32; 2],
 }
 
 unsafe impl Sync for JudgeLine {}
@@ -164,27 +154,11 @@ impl JudgeLine {
         // self.object.set_time(res.time); // this is done by chart, chart has to calculate transform for us
         let rot = self.object.rotation.now();
         self.height.set_time(res.time);
-        let line_height = self.height.now();
-        let mut ctrl_obj = self.ctrl_obj.borrow_mut();
         self.cache.update_order.retain(|id| {
             let note = &mut self.notes[*id as usize];
-            note.update(res, rot, &tr, &mut ctrl_obj, line_height, bpm_list, index);
+            note.update(res, rot, &tr, bpm_list, index);
             !note.dead()
         });
-        drop(ctrl_obj);
-        match &mut self.kind {
-            JudgeLineKind::Text(anim) => {
-                anim.set_time(res.time);
-            }
-            JudgeLineKind::Paint(anim, ..) => {
-                anim.set_time(res.time);
-            }
-            JudgeLineKind::TextureGif(anim, ..) => {
-                anim.set_time(res.time);
-            }
-            _ => {}
-        }
-        self.color.set_time(res.time);
 
         let not_judge = |index: usize| {
             match self.notes[index].kind {
@@ -226,180 +200,40 @@ impl JudgeLine {
         });
     }
 
-    pub fn fetch_pos(&self, res: &Resource, lines: &[JudgeLine]) -> Vector {
-        let current_translation = self.object.now_translation(res);
-        if let Some(parent) = self.parent {
-            let parent = &lines[parent];
-            let parent_rotate = Rotation2::new(parent.object.rotation.now().to_radians());
-            parent.fetch_pos(res, lines) + parent_rotate * current_translation
-        } else {
-            current_translation
-        }
+    pub fn fetch_pos(&self, res: &Resource) -> Vector {
+        self.object.now_translation(res)
     }
 
-    pub fn fetch_rotate(&self, res: &Resource, lines: &[JudgeLine]) -> Matrix {
-        let current_rotate = self.object.now_rotation();
-        match (self.parent, self.rotate_with_parent) {
-            (Some(parent), true) => {
-                let parent = &lines[parent];
-                parent.fetch_rotate(res, lines) * current_rotate
-            }
-            _ => current_rotate,
-        }
+    pub fn fetch_rotate(&self) -> Matrix {
+        self.object.now_rotation()
     }
 
-    pub fn now_transform(&self, res: &Resource, lines: &[JudgeLine]) -> Matrix {
-        self.fetch_rotate(res, lines).append_translation(&self.fetch_pos(res, lines))
+    pub fn now_transform(&self, res: &Resource) -> Matrix {
+        self.fetch_rotate().append_translation(&self.fetch_pos(res))
     }
 
-    pub fn render(&self, ui: &mut Ui, res: &mut Resource, lines: &[JudgeLine], bpm_list: &mut BpmList, settings: &ChartSettings, id: usize) {
+    pub fn render(&self, ui: &mut Ui, res: &mut Resource, bpm_list: &mut BpmList, settings: &ChartSettings, id: usize) {
         let alpha = self.object.now_alpha();
-        let color = self.color.now_opt();
-        res.with_model(self.now_transform(res, lines), |res| {
+        res.with_model(self.now_transform(res), |res| {
             res.with_model(self.object.now_scale(), |res| {
-                res.apply_model(|res| match &self.kind {
-                    JudgeLineKind::Normal => {
-                        if res.config.render_line {
-                            let mut color = color.unwrap_or(res.judge_line_color);
-                            color.a = parse_alpha(color.a * alpha.max(0.0), res.alpha, 0.15, res.config.chart_debug_line > 0.);
-                            if color.a == 0.0 {
-                                return;
-                            }
-                            let len = res.info.line_length;
-                            draw_line(-len, 0., len, 0., 0.0075, color);
+                res.apply_model(|res| 
+                    if res.config.render_line {
+                        let mut color = res.judge_line_color;
+                        color.a = parse_alpha(color.a * alpha.max(0.0), res.alpha, 0.15, res.config.chart_debug_line > 0.);
+                        if color.a == 0.0 {
+                            return;
                         }
+                        let len = res.info.line_length;
+                        draw_line(-len, 0., len, 0., 0.0075, color);
                     }
-                    JudgeLineKind::Texture(texture, _) => {
-                        if res.config.render_line_extra {
-                            let mut color = color.unwrap_or(WHITE);
-                            if res.time <= 0. && matches!(color, WHITE) { // some image show pure white before play
-                                color = BLACK;
-                            }
-                            color.a = parse_alpha(alpha.max(0.0), res.alpha, 0.15, res.config.chart_debug_line > 0.);
-                            if color.a == 0.0 {
-                                return;
-                            }
-                            // let hf = vec2(texture.width() / res.aspect_ratio, texture.height() / res.aspect_ratio);
-                            let hf = vec2(texture.width(), texture.height()); // Sync RPE
-                            draw_texture_ex(
-                                **texture,
-                                -hf.x / 2.,
-                                -hf.y / 2.,
-                                color,
-                                DrawTextureParams {
-                                    dest_size: Some(hf),
-                                    flip_y: true,
-                                    pivot: Some(Vec2::new(self.anchor[0], -self.anchor[1] + 1.)),
-                                    ..Default::default()
-                                },
-                            );
-                        }
-                    }
-                    JudgeLineKind::TextureGif(anim, frames, _) => {
-                        if res.config.render_line_extra {
-                            let t = anim.now_opt().unwrap_or(0.0);
-                            let frame = frames.get_prog_frame(t);
-                            let mut color = color.unwrap_or(WHITE);
-                            color.a = parse_alpha(alpha.max(0.0), res.alpha, 0.15, res.config.chart_debug_line > 0.);
-                            if color.a == 0.0 {
-                                return;
-                            }
-                            let hf = vec2(frame.width(), frame.height());
-                            draw_texture_ex(
-                                **frame,
-                                -hf.x / 2.,
-                                -hf.y / 2.,
-                                color,
-                                DrawTextureParams {
-                                    dest_size: Some(hf),
-                                    flip_y: true,
-                                    pivot: Some(Vec2::new(self.anchor[0], -self.anchor[1] + 1.)),
-                                    ..Default::default()
-                                },
-                            );
-                        }
-                    }
-                    JudgeLineKind::Text(anim) => {
-                        if res.config.render_line_extra {
-                                let mut color = color.unwrap_or(WHITE);
-                            color.a = parse_alpha(alpha.max(0.0), res.alpha, 0.15, res.config.chart_debug_line > 0.);
-                            if color.a == 0.0 {
-                                return;
-                            }
-                            let now = anim.now();
-                            res.apply_model_of(&Matrix::identity().append_nonuniform_scaling(&Vector::new(1., -1.)), |_| {
-                                ui.text(&now).pos(0., 0.).anchor(self.anchor[0], -self.anchor[1] + 1.).size(1.).color(color).multiline().draw();
-                            });
-                        }
-                    }
-                    JudgeLineKind::Paint(anim, state) => {
-                        if res.config.render_line_extra {
-                            let mut color = color.unwrap_or(WHITE);
-                            color.a = parse_alpha(alpha.max(0.0) * 2.55, res.alpha, 0.15, res.config.chart_debug_line > 0.);
-                            let mut gl = unsafe { get_internal_gl() };
-                            let mut guard = state.borrow_mut();
-                            let vp = get_viewport();
-                            let pass = *guard.0.get_or_insert_with(|| {
-                                let ctx = &mut gl.quad_context;
-                                let tex = Texture::new_render_texture(
-                                    ctx,
-                                    TextureParams {
-                                        width: vp.2 as _,
-                                        height: vp.3 as _,
-                                        format: miniquad::TextureFormat::RGBA8,
-                                        filter: FilterMode::Linear,
-                                        wrap: TextureWrap::Clamp,
-                                    },
-                                );
-                                RenderPass::new(ctx, tex, None)
-                            });
-                            gl.flush();
-                            let old_pass = gl.quad_gl.get_active_render_pass();
-                            gl.quad_gl.render_pass(Some(pass));
-                            gl.quad_gl.viewport(None);
-                            let size = anim.now();
-                            if size <= 0. {
-                                if guard.1 {
-                                    clear_background(Color::default());
-                                    guard.1 = false;
-                                }
-                            } else {
-                                ui.fill_circle(0., 0., size / vp.2 as f32 * 2., color);
-                                guard.1 = true;
-                            }
-                            gl.flush();
-                            gl.quad_gl.render_pass(old_pass);
-                            gl.quad_gl.viewport(Some(vp));
-                        }
-                    }
-                })
+                )
             });
-            if let JudgeLineKind::Paint(_, state) = &self.kind {
-                let guard = state.borrow_mut();
-                if guard.1 && res.config.render_line_extra {
-                    let ctx = unsafe { get_internal_gl() }.quad_context;
-                    let tex = guard.0.as_ref().unwrap().texture(ctx);
-                    let top = 1. / res.aspect_ratio;
-                    draw_texture_ex(
-                        Texture2D::from_miniquad_texture(tex),
-                        -1.,
-                        -top,
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(vec2(2., top * 2.)),
-                            ..Default::default()
-                        },
-                    );
-                }
-            }
             let mut config = RenderConfig {
                 settings,
-                ctrl_obj: &mut self.ctrl_obj.borrow_mut(),
                 line_height: self.height.now(),
                 appear_before: f32::INFINITY,
                 invisible_time: f32::INFINITY,
                 draw_below: self.show_below,
-                incline_sin: self.incline.now_opt().map(|it| it.to_radians().sin()).unwrap_or_default(),
             };
             if res.config.has_mod(Mods::FADE_OUT) {
                 config.invisible_time = LIMIT_BAD;
@@ -523,34 +357,9 @@ impl JudgeLine {
             if res.config.chart_debug_line > 0. {
                 res.with_model(Matrix::identity().append_nonuniform_scaling(&Vector::new(1.0, -1.0)), |res| {
                     res.apply_model(|res| {
-                        let kind = match &self.kind {
-                            JudgeLineKind::Normal => {
-                                if !res.config.render_line { return };
-                                String::new()
-                            },
-                            JudgeLineKind::Text(text) => {
-                                if !res.config.render_line_extra { return };
-                                format!(" text:{}", text.now())
-                            },
-                            JudgeLineKind::Texture(_, name) => {
-                                if !res.config.render_line_extra { return };
-                                format!(" img:{}", name)
-                            },
-                            JudgeLineKind::TextureGif(_, frames, name) => {
-                                if !res.config.render_line_extra { return };
-                                format!(" gif:{}/{}", name, frames.total_time())
-                            },
-                            JudgeLineKind::Paint(_, _) => {
-                                if !res.config.render_line_extra { return };
-                                format!(" paint")
-                            },
-                        };
+                        if !res.config.render_line { return };
+                        String::new();
 
-                        let parent = if let Some(parent) = self.parent {
-                            format!("({})", parent)
-                        } else {
-                            String::new()
-                        };
                         let line_height_ulp = {
                             if !config.line_height.is_nan() & !config.line_height.is_infinite() {
                                 f32::EPSILON * config.line_height.abs()
@@ -565,26 +374,6 @@ impl JudgeLine {
                                     String::new()
                                 }
                         };
-                        let z_index = {
-                            if self.z_index == 0 {
-                                String::new()
-                            } else {
-                                format!(" z:{}", self.z_index)
-                            }
-                        };
-                        let attach_ui = {
-                            let num = self.attach_ui.map_or(0, |it| it as u8);
-                            if num == 0 {
-                                String::new()
-                            } else {
-                                format!(" a_ui:{}", num)
-                            }
-                        };
-                        let anchor = if self.anchor[0] == 0.5 && self.anchor[1] == 0.5 {
-                            String::new()
-                        } else {
-                            format!(" anc:{} {}", self.anchor[0], self.anchor[1])
-                        };
                         let color = if line_height_ulp > 0.018518519 { // 10px error in 1080P
                             Color::new(1., 0., 0., parse_alpha(alpha, res.alpha, 0.15, res.config.chart_debug_line > 0.))
                         } else if line_height_ulp > 0.0018518519 { // 1px error in 1080P
@@ -592,7 +381,7 @@ impl JudgeLine {
                         } else {
                             Color::new(1., 1., 1., parse_alpha(alpha, res.alpha, 0.15, res.config.chart_debug_line > 0.))
                         };
-                        ui.text(format!("[{}]{} h:{:.2}{}{}{}{}{}", id, parent, config.line_height, line_height_ulp_string, z_index, attach_ui, anchor, kind))
+                        ui.text(format!("[{}] h:{:.2}{}", id, config.line_height, line_height_ulp_string))
                         .pos(0., -res.config.chart_debug_line * 0.1)
                         .anchor(0.5, 1.)
                         .size(res.config.chart_debug_line)

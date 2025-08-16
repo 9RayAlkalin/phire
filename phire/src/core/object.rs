@@ -81,20 +81,3 @@ impl Object {
         translation_back * translation * translation_to
     }
 }
-
-#[derive(Default, Clone)]
-pub struct CtrlObject {
-    pub alpha: AnimFloat,
-    pub size: AnimFloat,
-    pub pos: AnimFloat,
-    pub y: AnimFloat,
-}
-
-impl CtrlObject {
-    pub fn set_height(&mut self, height: f32) {
-        self.alpha.set_time(height);
-        self.size.set_time(height);
-        self.pos.set_time(height);
-        self.y.set_time(height);
-    }
-}

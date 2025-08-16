@@ -1,22 +1,21 @@
-#![allow(unused)]
+// #![allow(unused)]
 
 crate::tl_file!("game");
 
 use chinese_number::{ChineseCase, ChineseCountMethod, ChineseVariant, NumberToChinese};
 use super::{
     draw_background,
-    ending::RecordUpdateState,
     loading::{BasicPlayer, UpdateFn, UploadFn},
     request_input, return_input, show_message, take_input, EndingScene, NextScene, Scene,
 };
 use crate::{
     bin::BinaryReader,
     config::{Config, Mods},
-    core::{BadNote, Chart, ChartExtra, Effect, Point, Resource, UIElement, BUFFER_SIZE},
+    core::{BadNote, Chart, Point, Resource, UIElement},
     ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
-    fs::FileSystem, gyro::{Gyro, GYRO, GYROSCOPE_DATA},
+    fs::FileSystem, gyro::GYRO,
     info::{ChartFormat, ChartInfo},
-    judge::Judge, parse::{parse_extra, parse_pec, parse_phigros, parse_rpe},
+    judge::Judge, parse::{parse_pec, parse_phigros, parse_rpe},
     time::TimeManager,
     ui::{RectButton, Ui}
 };
@@ -121,7 +120,6 @@ pub struct GameScene {
     pub gl: InternalGlContext<'static>,
     player: Option<BasicPlayer>,
     info_offset: f32,
-    effects: Vec<Effect>,
 
     first_in: bool,
     exercise_range: Range<f32>,
@@ -304,17 +302,6 @@ impl GameScene {
     
 
     pub async fn load_chart(fs: &mut dyn FileSystem, info: &ChartInfo, config: &Config) -> Result<(Chart, ChartFormat)> {
-        let extra = if config.render_extra {
-            if let Some(extra) = fs.load_file("extra.json").await.ok().map(String::from_utf8).transpose()? {
-                parse_extra(&extra, fs).await.context("Failed to parse extra")?
-            } else if let Some(extra) = fs.load_file("extra1.json").await.ok().map(String::from_utf8).transpose()? {
-                parse_extra(&extra, fs).await.context("Failed to parse extra1")?
-            } else {
-                ChartExtra::default()
-            }
-        } else {
-            ChartExtra::default()
-        };
         let bytes = Self::load_chart_bytes(fs, info).await.context("Failed to load chart")?;
         let format = info.format.clone().unwrap_or_else(|| {
             if let Ok(text) = std::str::from_utf8(&bytes) {
@@ -331,16 +318,15 @@ impl GameScene {
                 ChartFormat::Pbc
             }
         });
-        let mut chart = match format {
-            ChartFormat::Rpe => parse_rpe(&String::from_utf8_lossy(&bytes), fs, extra).await,
-            ChartFormat::Pgr => parse_phigros(&String::from_utf8_lossy(&bytes), extra),
-            ChartFormat::Pec => parse_pec(&String::from_utf8_lossy(&bytes), extra),
+        let chart = match format {
+            ChartFormat::Rpe => parse_rpe(&String::from_utf8_lossy(&bytes), fs).await,
+            ChartFormat::Pgr => parse_phigros(&String::from_utf8_lossy(&bytes)),
+            ChartFormat::Pec => parse_pec(&String::from_utf8_lossy(&bytes)),
             ChartFormat::Pbc => {
                 let mut r = BinaryReader::new(Cursor::new(bytes));
                 r.read()
             }
         }?;
-        chart.load_textures(fs).await?;
         Ok((chart, format))
     }
 
@@ -364,18 +350,11 @@ impl GameScene {
             }
             _ => {}
         }
-        let (mut chart, format) = if let Some((chart, format)) = preload_chart {
+        let (chart, _) = if let Some((chart, format)) = preload_chart {
             (chart, format)
         } else {
             Self::load_chart(fs.deref_mut(), &info, &config).await?
         };
-        let effects = std::mem::take(&mut chart.extra.global_effects);
-        if config.fxaa {
-            chart
-                .extra
-                .effects
-                .push(Effect::new(0.0..f32::INFINITY, include_str!("fxaa.glsl"), Vec::new(), false).unwrap());
-        }
 
         let judge = Judge::new(&chart);
 
@@ -387,18 +366,11 @@ impl GameScene {
             player.as_ref().and_then(|it| it.avatar.clone()),
             background,
             illustration,
-            chart.extra.effects.is_empty() && effects.is_empty(),
         )
         .await
         .context("Failed to load resources")?;
         let exercise_range = (chart.offset + info_offset + res.config.offset)..res.track_length;
         
-        // Prepare extra sfx from chart.hitsounds
-        chart.hitsounds.drain().for_each(|(name, clip)| {
-            if let Ok(clip) = res.audio.create_sfx(clip, Some(BUFFER_SIZE)) {
-                res.extra_sfxs.insert(name, clip);
-            }
-        });
 
         let music = Self::new_music(&mut res)?;
         Ok(Self {
@@ -411,7 +383,6 @@ impl GameScene {
             judge,
             gl: unsafe { get_internal_gl() },
             player,
-            effects,
             info_offset,
 
             first_in: false,
@@ -529,7 +500,7 @@ impl GameScene {
         if text_width > max_width {
             text_size *= max_width / text_width
         }
-        self.chart.with_element(ui, res, UIElement::Score, Some((score_right, score_top)), Some((score_right, score_top)), |ui, color| {
+        self.chart.with_element(ui, UIElement::Score, |ui, color| {
             if res.config.render_ui_score {
                 ui.text(score)
                     .pos(score_right, score_top)
@@ -548,7 +519,7 @@ impl GameScene {
             }
         });
         if res.config.render_ui_pause {
-            self.chart.with_element(ui, res, UIElement::Pause, Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), Some((pause_center.x - pause_w * 1.5, pause_center.y - pause_h * 0.5)), |ui, color| {
+            self.chart.with_element(ui, UIElement::Pause, |ui, color| {
                 let mut r = Rect::new(pause_center.x - pause_w / 2., pause_center.y - pause_h / 2., pause_w, pause_h);
                 //let ct = pause_center.coords;
                 let c = Color { a: color.a * c.a, ..color };
@@ -580,7 +551,7 @@ impl GameScene {
             }
             let combo_y = top + eps * 1.55 - (1. - p) * 0.4 + ct.y;
             let btm = text.anchor(0.5, 0.5).pos(0., combo_y).draw().bottom() + 0.015;
-            self.chart.with_element(ui, res, UIElement::ComboNumber, Some((0., combo_y)), Some((0., combo_y)), |ui, color| {
+            self.chart.with_element(ui, UIElement::ComboNumber, |ui, color| {
                 ui.text(&combo)
                     .pos(0., combo_y)
                     .anchor(0.5, 0.5)
@@ -590,7 +561,7 @@ impl GameScene {
             });
             let mut text = ui.text(&res.config.combo).size(0.34 * scale_ratio);
             let ct = text.measure().center();
-            self.chart.with_element(ui, res, UIElement::Combo, Some((0., btm + ct.y)), Some((0., btm + ct.y)), |ui, color| {
+            self.chart.with_element(ui, UIElement::Combo, |ui, color| {
                 if (cfg!(feature = "play") && res.config.autoplay()) || validate_combo(&res.config.combo) || res.config.combo.len() > 50 {
                     ui.text("AUTOPLAY")
                         .pos(0., btm + ct.y)
@@ -618,7 +589,7 @@ impl GameScene {
             if text_width > max_width {
                 text_size *= max_width / text_width
             }
-            self.chart.with_element(ui, res, UIElement::Name, Some((lf, bt)), Some((lf, bt)), |ui, color| {
+            self.chart.with_element(ui, UIElement::Name, |ui, color| {
                 ui.text(&res.info.name)
                     .pos(lf, bt)
                     .anchor(0., 1.)
@@ -635,7 +606,7 @@ impl GameScene {
             if text_width > max_width {
                 text_size *= max_width / text_width
             }
-            self.chart.with_element(ui, res, UIElement::Level, Some((-lf, bt)), Some((-lf, bt)), |ui, color| {
+            self.chart.with_element(ui, UIElement::Level, |ui, color| {
                 ui.text(&res.info.level)
                     .pos(-lf, bt)
                     .anchor(1., 1.)
@@ -660,11 +631,43 @@ impl GameScene {
                 .draw();
             }
         };
+        ui.text("Phire Preview build on 2025-08-15")
+            .pos(-lf, 0.98)
+            .anchor(1.0, 1.)
+            .size(0.25 * scale_ratio)
+            .color(Color::new(1., 1., 1., 0.5))
+            .draw();
+        let trial_secs = 7 * 24 * 60 * 60;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs() as i64;
+        let trial_start: i64 = 1755187200;
+        let elapsed_secs = now - trial_start;
+        if elapsed_secs >= trial_secs {
+            tm.seek_to(0.0);
+            self.music.pause()?;
+            ui.text(format!("此 Phire 副本不是正版 激活期限已过"))
+                .pos(lf, 0.98)
+                .anchor(0.0, 1.)
+                .size(0.25 * scale_ratio)
+                .color(Color::new(1., 1., 1., 1.0))
+                .draw();
+        } else {
+            let remaining = trial_secs - elapsed_secs;
+            let days_left = remaining / (24 * 60 * 60);
+            ui.text(format!("此 Phire 副本不是正版 剩余激活时间: {} 天", days_left))
+                .pos(lf, 0.98)
+                .anchor(0.0, 1.)
+                .size(0.25 * scale_ratio)
+                .color(Color::new(1., 1., 1., 0.5))
+                .draw();
+        }
         let hw = 0.003;
         let height = eps * 1.0;
         let dest = (aspect_ratio * 2. * res.time / res.track_length).max(0.).min(aspect_ratio * 2.);
         if res.config.render_ui_bar {
-            self.chart.with_element(ui, res, UIElement::Bar, Some((-aspect_ratio, top + height / 2.)), Some((-aspect_ratio, top + height / 2.)), |ui, color| {
+            self.chart.with_element(ui, UIElement::Bar, |ui, color| {
                 //let ct = Vector::new(0., top + height / 2.);
                 ui.fill_rect(
                     Rect::new(-aspect_ratio, top, dest, height),
@@ -1181,14 +1184,6 @@ impl Scene for GameScene {
         self.res.judge_line_color.a *= self.res.alpha;
         self.chart.update(&mut self.res);
         let res = &mut self.res;
-        #[cfg(feature = "video")]
-        if !tm.paused() {
-            for video in &mut self.chart.extra.videos {
-                if let Err(err) = video.update(res.time) {
-                    warn!("video error: {err:?}");
-                }
-            }
-        }
         if res.config.interactive && is_key_pressed(KeyCode::Space) {
             if tm.paused() {
                 if matches!(self.state, State::Playing) {
@@ -1242,9 +1237,6 @@ impl Scene for GameScene {
             if is_key_pressed(KeyCode::Q) {
                 self.should_exit = true;
             }
-        }
-        for effect in &mut self.effects {
-            effect.update(&self.res);
         }
         if let Some((id, text)) = take_input() {
             let offset = self.offset().min(0.);
@@ -1408,16 +1400,6 @@ impl Scene for GameScene {
         if res.config.particle {
             res.emitter.draw(dt);
         }
-
-        if !res.no_effect {
-            set_camera(&Camera2D {
-                zoom: vec2(1., asp2_chart),
-                ..Default::default()
-            });
-            for effect in &self.chart.extra.effects {
-                effect.render(res);
-            }
-        }
         
         {
             set_camera(&Camera2D {
@@ -1427,16 +1409,6 @@ impl Scene for GameScene {
                 ..Default::default()
             });
             self.ui(ui, tm)?;
-        }
-
-        if !self.res.no_effect && !self.effects.is_empty() {
-            set_camera(&Camera2D {
-                zoom: vec2(1., asp2_window),
-                ..Default::default()
-            });
-            for effect in &self.effects {
-                effect.render(&mut self.res);
-            }
         }
 
         {
@@ -1478,7 +1450,7 @@ impl Scene for GameScene {
             self.overlay_ui(ui, tm)?;
         }
 
-        if msaa || !self.res.no_effect {
+        if msaa {
             // render the texture onto screen
             if let Some(target) = &self.res.chart_target {
                 self.gl.flush();

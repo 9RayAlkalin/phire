@@ -3,14 +3,13 @@ crate::tl_file!("parser" ptl);
 use super::process_lines;
 use crate::{
     core::{
-        Anim, AnimFloat, AnimVector, BpmList, Chart, ChartExtra, ChartSettings, JudgeLine, JudgeLineCache, JudgeLineKind, Keyframe, Note, NoteKind, Object, HEIGHT_RATIO
+        AnimFloat, AnimVector, BpmList, Chart, ChartSettings, JudgeLine, JudgeLineCache, Keyframe, Note, NoteKind, Object, HEIGHT_RATIO
     },
     ext::NotNanExt,
     judge::{HitSound, JudgeStatus},
 };
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::{cell::RefCell, collections::HashMap};
 use tracing::warn;
 
 #[derive(Deserialize)]
@@ -232,9 +231,6 @@ fn parse_notes(r: f32, mut pgr: Vec<PgrNote>, _speed: &mut AnimFloat, height: &m
                 multiple_hint: false,
                 fake: false,
                 judge: JudgeStatus::NotJudged,
-                judge_scale: 1.0,
-                color: Anim::default(),
-                hit_fx_color: Anim::default(),
                 protected: false,
             })
         })
@@ -262,24 +258,15 @@ fn parse_judge_line(pgr: PgrJudgeLine, max_time: f32, format_version: u32) -> Re
             },
             ..Default::default()
         },
-        color: Anim::default(),
-        ctrl_obj: RefCell::default(),
-        kind: JudgeLineKind::Normal,
         height,
-        incline: AnimFloat::default(),
         notes,
-        parent: None,
-        rotate_with_parent: false,
-        anchor: [0.5, 0.5],
-        z_index: 0,
         show_below: false,
-        attach_ui: None,
 
         cache,
     })
 }
 
-pub fn parse_phigros(source: &str, extra: ChartExtra) -> Result<Chart> {
+pub fn parse_phigros(source: &str) -> Result<Chart> {
     let pgr: PgrChart = serde_json::from_str(source).with_context(|| ptl!("json-parse-failed"))?;
     let format_version = pgr.format_version;
     let mut bpm_values = Vec::new();
@@ -310,5 +297,5 @@ pub fn parse_phigros(source: &str, extra: ChartExtra) -> Result<Chart> {
         .collect::<Result<Vec<_>>>()?;
 
     process_lines(&mut lines);
-    Ok(Chart::new(pgr.offset, lines, BpmList::from_time(bpm_values), ChartSettings::default(), extra, HashMap::new()))
+    Ok(Chart::new(pgr.offset, lines, BpmList::from_time(bpm_values), ChartSettings::default()))
 }

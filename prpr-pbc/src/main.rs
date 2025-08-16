@@ -2,7 +2,6 @@ use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use phire::{
     bin::{BinaryReader, BinaryWriter},
-    core::ChartExtra,
     fs::FileSystem,
     info::ChartFormat,
     parse::{parse_pec, parse_phigros, parse_rpe},
@@ -81,11 +80,10 @@ fn main() -> Result<()> {
     };
 
     let mut fs = Box::new(DummyFileSystem);
-    let extra = ChartExtra::default();
     let mut chart = match format {
-        ChartFormat::Rpe => pollster::block_on(parse_rpe(&String::from_utf8_lossy(&bytes), fs.as_mut(), extra)),
-        ChartFormat::Pgr => parse_phigros(&String::from_utf8_lossy(&bytes), extra),
-        ChartFormat::Pec => parse_pec(&String::from_utf8_lossy(&bytes), extra),
+        ChartFormat::Rpe => pollster::block_on(parse_rpe(&String::from_utf8_lossy(&bytes), fs.as_mut())),
+        ChartFormat::Pgr => parse_phigros(&String::from_utf8_lossy(&bytes)),
+        ChartFormat::Pec => parse_pec(&String::from_utf8_lossy(&bytes)),
         ChartFormat::Pbc => {
             let mut r = BinaryReader::new(Cursor::new(&bytes));
             r.read()

@@ -1,19 +1,16 @@
 use crate::{
     core::{
-        Anim, AnimVector, BezierTween, BpmList, Chart, ChartExtra, ChartSettings, ClampedTween, CtrlObject, JudgeLine, JudgeLineCache, JudgeLineKind,
-        Keyframe, Note, NoteKind, Object, StaticTween, Tweenable, UIElement,
+        Anim, AnimVector, BezierTween, BpmList, Chart, ChartSettings, ClampedTween, JudgeLine, JudgeLineCache,
+        Keyframe, Note, NoteKind, Object, StaticTween, Tweenable,
     },
     judge::{HitSound, JudgeStatus},
     parse::process_lines,
 };
 use anyhow::{bail, Result};
 use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
-use macroquad::{prelude::Color, texture::Texture2D};
+use macroquad::prelude::Color;
 use std::{
-    cell::RefCell,
-    collections::HashMap,
     io::{Read, Write},
-    ops::Deref,
     rc::Rc,
 };
 
@@ -351,27 +348,6 @@ impl BinaryData for Object {
     }
 }
 
-impl BinaryData for CtrlObject {
-    fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
-        assert_eq!(r.read::<u8>()?, 8);
-        Ok(Self {
-            alpha: r.read()?,
-            size: r.read()?,
-            pos: r.read()?,
-            y: r.read()?,
-        })
-    }
-
-    fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {
-        w.write_val(8_u8)?;
-        w.write(&self.alpha)?;
-        w.write(&self.size)?;
-        w.write(&self.pos)?;
-        w.write(&self.y)?;
-        Ok(())
-    }
-}
-
 impl BinaryData for Note {
     fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
         let kind = match r.read::<u8>()? {
@@ -397,9 +373,6 @@ impl BinaryData for Note {
             multiple_hint: false,
             fake: r.read()?,
             judge: JudgeStatus::NotJudged,
-            judge_scale: r.read()?,
-            color: r.read()?,
-            hit_fx_color: r.read()?,
             protected: false,
         })
     }
@@ -429,9 +402,6 @@ impl BinaryData for Note {
         }
         w.write_val(self.above)?;
         w.write_val(self.fake)?;
-        w.write_val(self.judge_scale)?;
-        w.write(&self.color)?;
-        w.write(&self.hit_fx_color)?;
         Ok(())
     }
 }
@@ -440,41 +410,16 @@ impl BinaryData for JudgeLine {
     fn read_binary<R: Read>(r: &mut BinaryReader<R>) -> Result<Self> {
         r.reset_time();
         let object = r.read()?;
-        let color = r.read()?;
-        let kind = match r.read::<u8>()? {
-            0 => JudgeLineKind::Normal,
-            1 => JudgeLineKind::Texture(Texture2D::empty().into(), r.read()?),
-            2 => JudgeLineKind::Text(r.read()?),
-            3 => JudgeLineKind::Paint(r.read()?, RefCell::default()),
-            _ => bail!("invalid judge line kind"),
-        };
         let height = r.read()?;
         let mut notes = r.array()?;
-        let parent = r.read()?;
-        let rotate_with_parent = r.read()?;
-        let anchor = r.read()?;
         let show_below = r.read()?;
-        let attach_ui = UIElement::from_u8(r.read()?);
-        let ctrl_obj = RefCell::new(r.read()?);
-        let incline = r.read()?;
-        let z_index = r.read()?;
 
         let cache = JudgeLineCache::new(&mut notes);
         Ok(Self {
             object,
-            color,
-            kind,
             height,
             notes,
-            parent,
-            rotate_with_parent,
-            anchor,
             show_below,
-
-            attach_ui,
-            ctrl_obj,
-            incline,
-            z_index,
 
             cache,
         })
@@ -482,35 +427,9 @@ impl BinaryData for JudgeLine {
 
     fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {
         w.write(&self.object)?;
-        match &self.kind {
-            JudgeLineKind::Normal => w.write_val(0_u8)?,
-            JudgeLineKind::Texture(_, path) => {
-                w.write_val(1_u8)?;
-                w.write(path)?;
-            }
-            JudgeLineKind::Text(text) => {
-                w.write_val(2_u8)?;
-                w.write(text)?;
-            }
-            JudgeLineKind::Paint(events, _) => {
-                w.write_val(3_u8)?;
-                w.write(events)?;
-            }
-            JudgeLineKind::TextureGif(..) => {
-                bail!("gif texture binary not supported");
-            }
-        }
-        w.write(&self.color)?;
         w.write(&self.height)?;
         w.array(&self.notes)?;
-        w.write(&self.parent)?;
-        w.write(&self.rotate_with_parent)?;
-        w.write(&self.anchor)?;
         w.write_val(self.show_below)?;
-        w.write_val(self.attach_ui.map_or(0, |it| it as u8))?;
-        w.write(self.ctrl_obj.borrow().deref())?;
-        w.write(&self.incline)?;
-        w.write(&self.z_index)?;
         Ok(())
     }
 }
@@ -534,7 +453,7 @@ impl BinaryData for Chart {
         let mut lines = r.array()?;
         process_lines(&mut lines);
         let settings = r.read()?;
-        Ok(Chart::new(offset, lines, BpmList::new(vec![(0., 60.)]), settings, ChartExtra::default(), HashMap::new()))
+        Ok(Chart::new(offset, lines, BpmList::new(vec![(0., 60.)]), settings))
     }
 
     fn write_binary<W: Write>(&self, w: &mut BinaryWriter<W>) -> Result<()> {

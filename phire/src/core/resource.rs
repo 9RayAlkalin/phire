@@ -458,7 +458,6 @@ pub struct Resource {
     pub frame_times: VecDeque<f64>, // frame interval time
 
     pub chart_target: Option<MSRenderTarget>,
-    pub no_effect: bool,
 
     pub note_buffer: RefCell<NoteBuffer>,
 
@@ -515,7 +514,6 @@ impl Resource {
         player: Option<SafeTexture>,
         background: SafeTexture,
         illustration: SafeTexture,
-        has_no_effect: bool,
     ) -> Result<Self> {
         macro_rules! load_tex {
             ($path:literal) => {
@@ -544,8 +542,6 @@ impl Resource {
         let aspect_ratio = config.aspect_ratio.unwrap_or(info.aspect_ratio);
         let note_width = config.note_scale * NOTE_WIDTH_RATIO_BASE;
         let note_scale = config.note_scale;
-
-        let no_effect = !config.render_extra || has_no_effect;
 
         let emitter = ParticleEmitter::new(&res_pack, note_scale, res_pack.info.hide_particles, Some(config.clone()));
 
@@ -588,7 +584,6 @@ impl Resource {
             frame_times,
 
             chart_target: None,
-            no_effect,
 
             note_buffer: RefCell::new(NoteBuffer::default()),
 
@@ -618,7 +613,7 @@ impl Resource {
             return false;
         }
         self.last_vp = vp;
-        if !self.no_effect || self.config.sample_count != 1 {
+        if self.config.sample_count != 1 {
             self.chart_target = Some(MSRenderTarget::new((vp.2 as u32, vp.3 as u32), self.config.sample_count));
         }
         fn viewport(aspect_ratio: f32, (x, y, w, h): (i32, i32, i32, i32)) -> (i32, i32, i32, i32) {

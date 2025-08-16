@@ -3,14 +3,13 @@ crate::tl_file!("parser" ptl);
 use super::{process_lines, RPE_TWEEN_MAP};
 use crate::{
     core::{
-        Anim, AnimFloat, AnimVector, BpmList, Chart, ChartExtra, ChartSettings, JudgeLine, JudgeLineCache, JudgeLineKind, Keyframe, Note, NoteKind,
+        AnimFloat, AnimVector, BpmList, Chart, ChartSettings, JudgeLine, JudgeLineCache, Keyframe, Note, NoteKind,
         Object, TweenId, EPS,
     },
     ext::NotNanExt,
     judge::{HitSound, JudgeStatus},
 };
 use anyhow::{bail, Context, Result};
-use std::{cell::RefCell, collections::HashMap};
 use tracing::warn;
 
 trait Take {
@@ -165,24 +164,15 @@ fn parse_judge_line(mut pec: PECJudgeLine, id: usize, max_time: f32) -> Result<J
             rotation: parse_events(pec.rotate_events, id, "rotate")?,
             scale: AnimVector(AnimFloat::fixed(3.91 / 6.), AnimFloat::default()),
         },
-        color: Anim::default(),
-        ctrl_obj: RefCell::default(),
-        kind: JudgeLineKind::Normal,
         height,
-        incline: AnimFloat::default(),
         notes: pec.notes,
-        parent: None,
-        rotate_with_parent: false,
-        anchor: [0.5, 0.5],
-        z_index: 0,
         show_below: false,
-        attach_ui: None,
 
         cache,
     })
 }
 
-pub fn parse_pec(source: &str, extra: ChartExtra) -> Result<Chart> {
+pub fn parse_pec(source: &str) -> Result<Chart> {
     let mut offset = None;
     let mut r = None;
     let mut lines = Vec::new();
@@ -276,9 +266,6 @@ pub fn parse_pec(source: &str, extra: ChartExtra) -> Result<Chart> {
                         multiple_hint: false,
                         fake,
                         judge: JudgeStatus::NotJudged,
-                        judge_scale: 1.0,
-                        color: Anim::default(),
-                        hit_fx_color: Anim::default(),
                         protected: false,
                     });
                     if it.next() == Some("#") {
@@ -383,7 +370,5 @@ pub fn parse_pec(source: &str, extra: ChartExtra) -> Result<Chart> {
             pe_alpha_extension: true,
             ..Default::default()
         },
-        extra,
-        HashMap::new(),
     ))
 }
