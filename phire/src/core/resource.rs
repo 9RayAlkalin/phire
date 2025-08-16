@@ -352,9 +352,9 @@ impl ParticleEmitter {
             initial_direction_spread: 2. * std::f32::consts::PI,
             size_randomness: 0.3,
             emitting: false,
-            initial_velocity: 4.3 * scale,
+            initial_velocity: 1.8 * scale,
             initial_velocity_randomness: 0.3  * scale,
-            linear_accel: -9.0,
+            linear_accel: |t| -1.5 * (t + 1.0),
             shape,
             colors_curve,
             ..Default::default()

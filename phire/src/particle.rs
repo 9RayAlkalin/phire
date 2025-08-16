@@ -144,7 +144,8 @@ pub struct EmitterConfig {
     /// Each particle will spawned with "initial_velocity = initial_velocity - initial_velocity * rand::gen_range(0.0, initial_velocity_randomness)".
     pub initial_velocity_randomness: f32,
     /// Velocity acceleration applied to each particle in the direction of motion.
-    pub linear_accel: f32,
+    /// linear_accel(t: f32) -> f32 Function that can calculate acceleration value based on time.
+    pub linear_accel: fn(f32) -> f32,
 
     // Initial rotation for each emitted particle.
     pub initial_rotation: f32,
@@ -361,9 +362,9 @@ impl Default for EmitterConfig {
             emitting: true,
             initial_direction: vec2(0., -1.),
             initial_direction_spread: 0.,
-            initial_velocity: 50.0,
+            initial_velocity: 10.0,
             initial_velocity_randomness: 0.0,
-            linear_accel: 0.0,
+            linear_accel: |_| 5.0,
             initial_rotation: 0.0,
             initial_rotation_randomness: 0.0,
             initial_angular_velocity: 0.0,
@@ -395,7 +396,9 @@ struct GpuParticle {
 
 struct CpuParticle {
     velocity: Vec2,
+    now_velocity: Vec2,
     angular_velocity: f32,
+    now_angular_velocity: f32,
     lived: f32,
     lifetime: f32,
     frame: u16,
@@ -613,16 +616,22 @@ impl Emitter {
             }
         };
 
+        let velocity = random_initial_vector(
+            vec2(self.config.initial_direction.x, self.config.initial_direction.y),
+            self.config.initial_direction_spread,
+            self.config.initial_velocity - self.config.initial_velocity * rand::gen_range(0.0, self.config.initial_velocity_randomness),
+        );
+
+        let angular_velocity = self.config.initial_angular_velocity
+            - self.config.initial_angular_velocity * rand::gen_range(0.0, self.config.initial_angular_velocity_randomness);
+
         self.particles_spawned += 1;
         self.gpu_particles.push(particle);
         self.cpu_counterpart.push(CpuParticle {
-            velocity: random_initial_vector(
-                vec2(self.config.initial_direction.x, self.config.initial_direction.y),
-                self.config.initial_direction_spread,
-                self.config.initial_velocity - self.config.initial_velocity * rand::gen_range(0.0, self.config.initial_velocity_randomness),
-            ),
-            angular_velocity: self.config.initial_angular_velocity
-                - self.config.initial_angular_velocity * rand::gen_range(0.0, self.config.initial_angular_velocity_randomness),
+            velocity: velocity,
+            now_velocity: velocity,
+            angular_velocity: angular_velocity,
+            now_angular_velocity: angular_velocity,
             lived: 0.0,
             lifetime: self.config.lifetime - self.config.lifetime * rand::gen_range(0.0, self.config.lifetime_randomness),
             frame: 0,
@@ -672,14 +681,14 @@ impl Emitter {
         }
 
         for (gpu, cpu) in self.gpu_particles.iter_mut().zip(&mut self.cpu_counterpart) {
+            let t = cpu.lived / cpu.lifetime;
             // TODO: this is not quite the way to apply acceleration, this is not
             // fps independent and just wrong
-            cpu.velocity += cpu.velocity * self.config.linear_accel * dt;
-            cpu.angular_velocity += cpu.angular_velocity * self.config.angular_accel * dt;
-            cpu.angular_velocity *= 1.0 - self.config.angular_damping;
+            cpu.now_velocity += cpu.velocity * (self.config.linear_accel)(t) * dt;
+            cpu.now_angular_velocity += cpu.angular_velocity * self.config.angular_accel * dt;
+            cpu.now_angular_velocity *= (1.0 - self.config.angular_damping).powf(dt);
 
             gpu.color = {
-                let t = cpu.lived / cpu.lifetime;
                 if t < 0.5 {
                     let t = t * 2.;
                     self.config.colors_curve.start.to_vec() * (1.0 - t) + self.config.colors_curve.mid.to_vec() * t
@@ -689,7 +698,7 @@ impl Emitter {
                 }
             };
             gpu.color *= cpu.color.to_vec();
-            gpu.pos += vec4(cpu.velocity.x, cpu.velocity.y, cpu.angular_velocity, 0.0) * dt;
+            gpu.pos += vec4(cpu.now_velocity.x, cpu.now_velocity.y, cpu.now_angular_velocity, 0.0) * dt;
 
             gpu.pos.w = cpu.initial_size * self.batched_size_curve.as_ref().map_or(1.0, |curve| curve.get(cpu.lived / cpu.lifetime));
 
@@ -699,7 +708,7 @@ impl Emitter {
 
             //cpu.lived = f32::min(cpu.lived + dt, cpu.lifetime);
             cpu.lived += dt;
-            cpu.velocity += self.config.gravity * dt;
+            cpu.now_velocity += self.config.gravity * dt;
 
             if let Some(atlas) = &self.config.atlas {
                 if cpu.lifetime != 0.0 {
