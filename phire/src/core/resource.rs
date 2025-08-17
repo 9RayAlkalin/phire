@@ -313,7 +313,7 @@ pub struct ParticleEmitter {
 }
 
 impl ParticleEmitter {
-    pub fn new(res_pack: &ResourcePack, scale: f32, hide_particles: bool, config: Option<Config>) -> Self {
+    pub fn new(res_pack: &ResourcePack, scale: f32, config: Option<Config>) -> Self {
         let colors_curve = {
             let start = WHITE;
             let mut mid = start;
@@ -375,7 +375,7 @@ impl ParticleEmitter {
             scale: res_pack.info.hit_fx_scale,
             emitter: Emitter::new(emitter_config),
             emitter_square: Emitter::new(emitter_square_config),
-            hide_particles,
+            hide_particles: res_pack.info.hide_particles,
         };
         res.set_scale(scale);
         res
@@ -559,7 +559,7 @@ impl Resource {
 
         let no_effect = !config.render_extra || has_no_effect;
 
-        let emitter = ParticleEmitter::new(&res_pack, note_scale, res_pack.info.hide_particles, Some(config.clone()));
+        let emitter = ParticleEmitter::new(&res_pack, note_scale, Some(config.clone()));
 
         macroquad::window::gl_set_drawcall_buffer_capacity(MAX_SIZE * 4, MAX_SIZE * 6);
         Ok(Self {
@@ -610,7 +610,7 @@ impl Resource {
 
     pub fn reset(&mut self) {
         self.judge_line_color = self.res_pack.info.line_perfect();
-        self.emitter = ParticleEmitter::new(&self.res_pack, self.config.note_scale, self.res_pack.info.hide_particles, Some(self.config.clone()));
+        self.emitter = ParticleEmitter::new(&self.res_pack, self.config.note_scale, Some(self.config.clone()));
     }
 
     pub fn emit_at_origin(&mut self, rotation: f32, color: Color) {
