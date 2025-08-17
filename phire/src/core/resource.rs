@@ -335,7 +335,7 @@ impl ParticleEmitter {
         let config_default = Config::default();
         let config = config.unwrap_or(config_default);
         let emitter_config = EmitterConfig {
-            max_particles: config.max_particles / 4,
+            max_particles: config.max_particles,
             local_coords: false,
             texture: Some(*res_pack.hit_fx),
             lifetime: res_pack.info.hit_fx_duration,
@@ -355,7 +355,7 @@ impl ParticleEmitter {
         };
         let rng = Pcg32::seed_from_u64(RNG_SEED);
         let emitter_square_config = EmitterConfig {
-            max_particles: config.max_particles,
+            max_particles: config.max_particles * 4,
             rng: Some(rng),
             local_coords: false,
             lifetime: res_pack.info.hit_fx_duration,
