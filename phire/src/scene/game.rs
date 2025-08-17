@@ -14,9 +14,11 @@ use crate::{
     config::{Config, Mods},
     core::{BadNote, Chart, ChartExtra, Effect, Point, Resource, UIElement, BUFFER_SIZE},
     ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
-    fs::FileSystem, gyro::{Gyro, GYRO, GYROSCOPE_DATA},
+    fs::FileSystem,
+    gyro::GYRO,
     info::{ChartFormat, ChartInfo},
-    judge::Judge, parse::{parse_extra, parse_pec, parse_phigros, parse_rpe},
+    judge::Judge,
+    parse::{parse_extra, parse_pec, parse_phigros, parse_rpe},
     time::TimeManager,
     ui::{RectButton, Ui}
 };
@@ -175,11 +177,11 @@ macro_rules! reset_music_speed {
             },
         ).expect("failed to create music");
         $tm.pause();
-        $self.music.pause();
+        $self.music.pause().ok();
         let now = $tm.now();
         $tm.speed = $res.config.speed as _;
         $tm.seek_to(now);
-        $self.music.seek_to(now);
+        $self.music.seek_to(now).ok();
     }};
 }
 
@@ -364,7 +366,7 @@ impl GameScene {
             }
             _ => {}
         }
-        let (mut chart, format) = if let Some((chart, format)) = preload_chart {
+        let (mut chart, _) = if let Some((chart, format)) = preload_chart {
             (chart, format)
         } else {
             Self::load_chart(fs.deref_mut(), &info, &config).await?
@@ -639,7 +641,7 @@ impl GameScene {
                 ui.text(&res.info.level)
                     .pos(-lf, bt)
                     .anchor(1., 1.)
-                    .size(0.505 * scale_ratio)
+                    .size(text_size)
                     .color(Color { a: color.a * c.a, ..color })
                     .draw();
             });
@@ -737,7 +739,6 @@ impl GameScene {
                 if no_retry && clicked == Some(0) {
                     clicked = None;
                 }
-                let mut pos = self.music.position();
                 if clicked.map_or(false, |it| it != -1) && (tm.speed - res.config.speed as f64).abs() > 1e-3 {
                     reset_music_speed!(self, res, tm);
                 }
@@ -764,7 +765,7 @@ impl GameScene {
                         tm.speed = res.config.speed as _;
                         tm.resume();
                         tm.seek_to(now - 1.);
-                        self.music.seek_to(now - 1.);
+                        self.music.seek_to(now - 1.)?;
                         self.pause_rewind = PauseRewind {
                             time: Some(tm.now()),
                             duration: Some(1.0),
@@ -994,7 +995,7 @@ impl GameScene {
             if (tm.speed - self.res.config.speed as f64).abs() > 1e-3 {
                 reset_music_speed!(self, self.res, tm);
                 tm.resume();
-                self.music.play();
+                self.music.play().ok();
             }
         });
     }
