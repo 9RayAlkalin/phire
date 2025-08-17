@@ -234,7 +234,7 @@ impl Scene for LoadingScene {
         );
         let (text_chart, text_illustration) = if self.config.chinese {("谱师", "画师")} else {("Chart", "Illustration")};
         let t = draw_text_aligned(ui, text_chart, main.x + main.w / 6.1, main.y + main.h * 1.32, (0., 0.), 0.253, WHITE);
-        draw_text_aligned_fix(ui, &self.info.charter, t.x, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
+        draw_text_aligned_fix(ui, &self.charter, t.x, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
         let w = 0.031;
         let t = draw_text_aligned(ui, text_illustration, t.x - w, t.y + w / 0.135 / 13. * 5., (0., 0.), 0.253, WHITE);
         draw_text_aligned_fix(ui, &self.info.illustrator, t.x - 0.002, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
