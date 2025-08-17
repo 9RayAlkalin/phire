@@ -350,7 +350,7 @@ impl AtlasConfig {
 impl Default for EmitterConfig {
     fn default() -> EmitterConfig {
         EmitterConfig {
-            max_particles: 20000,
+            max_particles: 5000,
             rng: None,
             local_coords: false,
             emission_shape: EmissionShape::Point,
