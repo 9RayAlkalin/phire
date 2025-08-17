@@ -22,6 +22,7 @@ pub enum Interpolation {
 #[derive(Debug, Clone)]
 pub struct Curve {
     /// Key points for building a curve
+    /// (time, scale)
     pub points: Vec<(f32, f32)>,
     /// The way middle points is interpolated during building a curve
     /// Only Linear is implemented now
@@ -700,10 +701,10 @@ impl Emitter {
             gpu.color *= cpu.color.to_vec();
             gpu.pos += vec4(cpu.now_velocity.x, cpu.now_velocity.y, cpu.now_angular_velocity, 0.0) * dt;
 
-            gpu.pos.w = cpu.initial_size * self.batched_size_curve.as_ref().map_or(1.0, |curve| curve.get(cpu.lived / cpu.lifetime));
+            gpu.pos.w = cpu.initial_size * self.batched_size_curve.as_ref().map_or(1.0, |curve| curve.get(t));
 
             if cpu.lifetime != 0.0 {
-                gpu.data.y = cpu.lived / cpu.lifetime;
+                gpu.data.y = t;
             }
 
             //cpu.lived = f32::min(cpu.lived + dt, cpu.lifetime);
@@ -712,7 +713,7 @@ impl Emitter {
 
             if let Some(atlas) = &self.config.atlas {
                 if cpu.lifetime != 0.0 {
-                    cpu.frame = (cpu.lived / cpu.lifetime * (atlas.end_index - atlas.start_index) as f32) as u16 + atlas.start_index;
+                    cpu.frame = (t * (atlas.end_index - atlas.start_index) as f32) as u16 + atlas.start_index;
                 }
 
                 let x = cpu.frame % atlas.n;

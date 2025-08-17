@@ -1,10 +1,11 @@
 use super::{MSRenderTarget, Matrix, Point, NOTE_WIDTH_RATIO_BASE};
 use crate::{
     config::Config,
+    core::tween::Tweenable,
     ext::{create_audio_manger, nalgebra_to_glm, SafeTexture},
     fs::FileSystem,
     info::ChartInfo,
-    particle::{AtlasConfig, ColorCurve, Emitter, EmitterConfig, ParticleShape},
+    particle::{AtlasConfig, ColorCurve, Curve, Emitter, EmitterConfig, Interpolation, ParticleShape}
 };
 use anyhow::{bail, Context, Result};
 use macroquad::prelude::*;
@@ -321,6 +322,16 @@ impl ParticleEmitter {
             end.a = 0.;
             ColorCurve { start, mid, end }
         };
+        let size_curve = Some(Curve {
+            points: vec![
+                (0.0, 1.0),
+                (0.5, 0.9),
+                (0.8, 0.8),
+                (1.0, 0.7),
+            ],
+            interpolation: Interpolation::Linear,
+            resolution: 10,
+        });
         let config_default = Config::default();
         let config = config.unwrap_or(config_default);
         let emitter_config = EmitterConfig {
@@ -352,11 +363,12 @@ impl ParticleEmitter {
             initial_direction_spread: 2. * std::f32::consts::PI,
             size_randomness: 0.3,
             emitting: false,
-            initial_velocity: 1.8 * scale,
+            initial_velocity: 2.0 * scale,
             initial_velocity_randomness: 0.3  * scale,
-            linear_accel: |t| -1.5 * (t + 1.0),
+            linear_accel: |t| -(f32::tween(&1.6, &0.0, t.powi(4)).powi(2)),
             shape,
             colors_curve,
+            size_curve,
             ..Default::default()
         };
         let mut res = Self {
