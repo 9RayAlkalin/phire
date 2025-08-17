@@ -58,6 +58,11 @@ fn default_tinted() -> bool {
     true
 }
 
+#[inline]
+fn default_particle_count() -> usize {
+    4
+}
+
 #[allow(dead_code)]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,6 +81,8 @@ pub struct ResPackInfo {
     pub hide_particles: bool,
     #[serde(default)]
     pub circle_particles: bool,
+    #[serde(default = "default_particle_count")]
+    pub particle_count: usize,
     #[serde(default = "default_tinted")]
     pub hit_fx_tinted: bool,
     #[serde(default = "default_tinted")]
@@ -310,6 +317,7 @@ pub struct ParticleEmitter {
     pub emitter: Emitter,
     pub emitter_square: Emitter,
     pub hide_particles: bool,
+    pub particle_count: usize,
 }
 
 impl ParticleEmitter {
@@ -355,7 +363,7 @@ impl ParticleEmitter {
         };
         let rng = Pcg32::seed_from_u64(RNG_SEED);
         let emitter_square_config = EmitterConfig {
-            max_particles: config.max_particles * 4,
+            max_particles: config.max_particles * res_pack.info.particle_count,
             rng: Some(rng),
             local_coords: false,
             lifetime: res_pack.info.hit_fx_duration,
@@ -376,6 +384,7 @@ impl ParticleEmitter {
             emitter: Emitter::new(emitter_config),
             emitter_square: Emitter::new(emitter_square_config),
             hide_particles: res_pack.info.hide_particles,
+            particle_count: res_pack.info.particle_count,
         };
         res.set_scale(scale);
         res
@@ -387,7 +396,7 @@ impl ParticleEmitter {
         self.emitter.emit(pt, 1);
         if !self.hide_particles {
             self.emitter_square.config.base_color = color;
-            self.emitter_square.emit(pt, 4);
+            self.emitter_square.emit(pt, self.particle_count);
         }
     }
 
