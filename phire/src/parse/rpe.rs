@@ -55,6 +55,7 @@ pub struct RPEEvent<T = f32> {
     bezier: u8,
     #[serde(default)]
     bezier_points: [f32; 4],
+    #[serde(default = "i32_one")]
     easing_type: i32,
     start: T,
     end: T,
@@ -73,27 +74,12 @@ pub struct RPECtrlEvent {
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RPESpeedEvent {
-    start_time: Triple,
-    end_time: Triple,
-    start: f32,
-    end: f32,
-    #[serde(default = "f32_zero")]
-    easing_left: f32,
-    #[serde(default = "f32_one")]
-    easing_right: f32,
-    #[serde(default = "i32_one")]
-    easing_type: i32,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct RPEEventLayer {
     alpha_events: Option<Vec<RPEEvent>>,
     move_x_events: Option<Vec<RPEEvent>>,
     move_y_events: Option<Vec<RPEEvent>>,
     rotate_events: Option<Vec<RPEEvent>>,
-    speed_events: Option<Vec<RPESpeedEvent>>,
+    speed_events: Option<Vec<RPEEvent>>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -240,8 +226,13 @@ fn parse_events<T: Tweenable, V: Clone + Into<T>>(
     Ok(Anim::new(kfs))
 }
 
-fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> Result<AnimFloat> {
-    let rpe: Vec<&Vec<RPESpeedEvent>> = rpe.iter().filter_map(|it| it.speed_events.as_ref()).collect();
+fn parse_speed_events(
+    r: &mut BpmList,
+    rpe: &[RPEEventLayer],
+    max_time: f32,
+    bezier_map: &BezierMap,
+) -> Result<AnimFloat> {
+    let rpe: Vec<&Vec<RPEEvent>> = rpe.iter().filter_map(|it| it.speed_events.as_ref()).collect();
     if rpe.is_empty() {
         // TODO or is it?
         return Ok(AnimFloat::default());
@@ -256,7 +247,9 @@ fn parse_speed_events(r: &mut BpmList, rpe: &[RPEEventLayer], max_time: f32) -> 
                 let tween = e.easing_type.max(1) as usize;
                 let tween_map = {
                     let tween = RPE_TWEEN_MAP.get(tween).copied().unwrap_or(RPE_TWEEN_MAP[0]);
-                    if e.easing_left.abs() < EPS && (e.easing_right - 1.0).abs() < EPS {
+                    if e.bezier != 0 {
+                        Rc::clone(&bezier_map[&bezier_key(e)])
+                    } else if e.easing_left.abs() < EPS && (e.easing_right - 1.0).abs() < EPS {
                         StaticTween::get_rc(tween)
                     } else {
                         Rc::new(ClampedTween::new(tween, e.easing_left..e.easing_right))
@@ -514,7 +507,7 @@ async fn parse_judge_line(
         res.map_value(|v| v * factor);
         Ok(res)
     }
-    let mut height = parse_speed_events(r, &event_layers, max_time)?;
+    let mut height = parse_speed_events(r, &event_layers, max_time, bezier_map)?;
     let mut notes = parse_notes(r, rpe.notes.unwrap_or_default(), fs, &mut height, hitsounds).await?;
     let cache = JudgeLineCache::new(&mut notes);
     Ok(JudgeLine {
