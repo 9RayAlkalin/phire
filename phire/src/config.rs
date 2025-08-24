@@ -1,3 +1,5 @@
+use std::fmt;
+
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +24,20 @@ pub enum ChallengeModeColor {
     Golden,
     #[default] 
     Rainbow,
+}
+
+impl fmt::Display for ChallengeModeColor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ChallengeModeColor::White   => "white",
+            ChallengeModeColor::Green   => "green",
+            ChallengeModeColor::Blue    => "blue",
+            ChallengeModeColor::Red     => "red",
+            ChallengeModeColor::Golden  => "golden",
+            ChallengeModeColor::Rainbow => "rainbow",
+        };
+        write!(f, "{}", s)
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
