@@ -151,7 +151,7 @@ impl Note {
                     if bpm_list.per_line_bpm_storage { index as f32 } else { self.time }
                 );
                 //println!("{} {} {}", index, bpm_list.now_bpm(index as f32), beat);
-                *at = res.time + beat / res.config.speed; //HOLD_PARTICLE_INTERVAL
+                *at = res.time + beat * res.info.hold_particle_interval_ratio / res.config.speed; //HOLD_PARTICLE_INTERVAL
                 Some(if let Some(color) = self.hit_fx_color.now_opt() {
                     color
                 } else if perfect && !res.config.all_good && !res.config.all_bad {
