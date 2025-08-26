@@ -75,7 +75,7 @@ pub fn register() {
     tracing_subscriber::registry().with(CustomLayer).init();
 }
 
-pub fn register_with_colorize() {
-    colored::control::set_override(true);
+pub fn register_with_colorize(override_colorize: bool) {
+    colored::control::set_override(override_colorize);
     tracing_subscriber::registry().with(CustomLayer).init();
 }
