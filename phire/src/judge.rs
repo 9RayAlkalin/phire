@@ -902,7 +902,7 @@ impl Judge {
                     break;
                 }
                 note.judge = if matches!(note.kind, NoteKind::Hold { .. }) {
-                    if !res.config.disable_audio {
+                    if !res.disable_audio {
                         note.hitsound.play(res);
                     }
                     self.judgements.borrow_mut().push((t, line_id as _, *id, Err(true)));
@@ -963,7 +963,7 @@ impl Judge {
                 },
             };
 
-            if !res.config.disable_audio {
+            if !res.disable_audio {
                 match note_kind {
                     NoteKind::Click => if !res.config.all_bad {note_hitsound.play(res)},
                     NoteKind::Hold { .. } => (),
@@ -971,6 +971,15 @@ impl Judge {
                 }
             }
 
+        }
+    }
+
+    pub fn commit_all(&mut self, chart: &mut Chart) {
+        for _ in chart.lines.iter()
+            .flat_map(|it| it.notes.iter())
+            .filter(|it| !it.fake && matches!(it.judge, JudgeStatus::NotJudged | JudgeStatus::PreJudge))
+        {
+            self.commit(0., Judgement::Perfect, 0, 0, 0.);
         }
     }
 

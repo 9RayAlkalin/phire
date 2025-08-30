@@ -83,12 +83,11 @@ pub struct Config {
     pub chinese: bool,
     pub combo: String,
     pub difficulty: String,
-    pub disable_loading: bool,
+    pub enter_animation: bool,
 
     // for compatibility
     pub autoplay: Option<bool>,
 
-    pub disable_audio: bool,
     pub judge_offset: f32,
 
     pub render_line: bool,
@@ -113,6 +112,9 @@ pub struct Config {
 
     pub rotation_mode: bool,
     pub rotation_flat_mode: bool,
+
+    pub play_start_time: f32,
+    pub play_end_time: Option<f32>,
 }
 
 impl Default for Config {
@@ -162,11 +164,10 @@ impl Default for Config {
             chinese: false,
             combo: "RECALL".to_string(),
             difficulty: "".to_string(),
-            disable_loading: false,
+            enter_animation: true,
 
             autoplay: None,
 
-            disable_audio: false,
             judge_offset: 0.,
 
             render_line: true,
@@ -191,6 +192,9 @@ impl Default for Config {
 
             rotation_mode: false,
             rotation_flat_mode: false,
+
+            play_start_time: 0.,
+            play_end_time: None,
         }
     }
 }

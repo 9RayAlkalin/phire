@@ -41,7 +41,7 @@ mod inner;
 #[cfg(feature = "closed")]
 use inner::*;
 
-const WAIT_TIME: f32 = 0.5;
+pub const WAIT_TIME: f32 = 0.5;
 const AFTER_TIME: f32 = 0.7;
 const PAUSE_BACKGROUND_ALPHA: f32 = 0.6;
 
@@ -190,7 +190,7 @@ impl GameScene {
     pub const BEFORE_TIME: f32 = 0.7;
     pub const BEFORE_DURATION: f32 = 1.2;
     pub const WAIT_AFTER_TIME: f32 = AFTER_TIME + 0.3;
-    pub const FADEOUT_TIME: f32 = WAIT_TIME + AFTER_TIME + 0.3;
+    pub const FADEOUT_TIME: f32 = WAIT_TIME + Self::WAIT_AFTER_TIME;
 
     pub async fn load_chart_bytes(fs: &mut dyn FileSystem, info: &ChartInfo) -> Result<Vec<u8>> {
         if let Ok(bytes) = fs.load_file(&info.chart).await {
@@ -393,7 +393,8 @@ impl GameScene {
         )
         .await
         .context("Failed to load resources")?;
-        let exercise_range = (chart.offset + info_offset + res.config.offset)..res.track_length;
+        let offset = chart.offset + info_offset + res.config.offset;
+        let exercise_range = offset + res.config.play_start_time..res.track_length;
         
         // Prepare extra sfx from chart.hitsounds
         chart.hitsounds.drain().for_each(|(name, clip)| {
@@ -470,7 +471,7 @@ impl GameScene {
             State::Playing => 1.,
             State::Ending => {
                 let t = time - self.res.track_length - WAIT_TIME;
-                1. - (t / (AFTER_TIME + 0.3)).clamp(0., 1.).powi(2)
+                1. - (t / (Self::WAIT_AFTER_TIME)).clamp(0., 1.).powi(2)
             }
         };
         let c = Color::new(1., 1., 1., self.res.alpha);
@@ -664,7 +665,8 @@ impl GameScene {
         };
         let hw = 0.003;
         let height = eps * 1.0;
-        let dest = (aspect_ratio * 2. * res.time / res.track_length).max(0.).min(aspect_ratio * 2.);
+        let offset = self.chart.offset + self.info_offset + res.config.offset;
+        let dest = (aspect_ratio * 2. * (res.time - self.exercise_range.start + offset) / (self.exercise_range.end - self.exercise_range.start)).max(0.).min(aspect_ratio * 2.);
         if res.config.render_ui_bar {
             self.chart.with_element(ui, res, UIElement::Bar, Some((-aspect_ratio, top + height / 2.)), Some((-aspect_ratio, top + height / 2.)), |ui, color| {
                 //let ct = Vector::new(0., top + height / 2.);
@@ -753,7 +755,7 @@ impl GameScene {
                             duration: Some(0.1),
                             dim: false,
                         };
-                        res.config.disable_audio = true;
+                        res.disable_audio = true;
                     }
                     Some(1) => {
                         if self.mode == GameMode::Exercise && tm.now() > self.exercise_range.end as f64 && self.exercise_range.end - 0.1 < res.track_length {
@@ -771,7 +773,7 @@ impl GameScene {
                             duration: Some(1.0),
                             dim: true
                         };
-                        self.res.config.disable_audio = true;
+                        self.res.disable_audio = true;
                     }
                     _ => {}
                 }
@@ -901,7 +903,7 @@ impl GameScene {
                     duration: None,
                     dim: false
                 };
-                self.res.config.disable_audio = false;
+                self.res.disable_audio = false;
             } else if dim {
                 let a = (t / duration).clamp(0.0, 1.0) * PAUSE_BACKGROUND_ALPHA as f64;
                 let h = 1. / self.res.aspect_ratio;
@@ -917,7 +919,7 @@ impl GameScene {
     }
 
     fn offset(&self) -> f32 {
-        self.chart.offset + self.res.config.offset + self.info_offset
+        self.chart.offset + self.info_offset + self.res.config.offset
     }
 
     fn offset_chart(&self) -> f32 {
@@ -1054,7 +1056,19 @@ impl Scene for GameScene {
         let time = tm.now() as f32;
         let time = match self.state {
             State::Starting => {
-                if time >= Self::BEFORE_DURATION { // wait for animation
+                #[cfg(target_os = "windows")]
+                { // wtf bro. why must particles exist on Windows?
+                    let emitter_config = self.res.emitter.emitter.config.clone();
+                    let emitter_square_config = self.res.emitter.emitter_square.config.clone();
+                    self.res.emitter.emitter_square.config.rng = None;
+                    self.res.emitter.emitter.config.size = 0.0;
+                    self.res.emitter.emitter_square.config.size = 0.0;
+                    self.res.emitter.emitter.emit(vec2(0.0, 0.0), 1);
+                    self.res.emitter.emitter_square.emit(vec2(0.0, 0.0), 1);
+                    self.res.emitter.emitter.config = emitter_config;
+                    self.res.emitter.emitter_square.config = emitter_square_config;
+                }
+                if time >= Self::BEFORE_DURATION || !self.res.config.enter_animation { // wait for animation
                     self.res.alpha = 1.;
                     self.state = State::BeforeMusic;
                     tm.reset();
@@ -1067,21 +1081,12 @@ impl Scene for GameScene {
                     }
                     tm.now() as f32
                 } else {
-                    #[cfg(target_os = "windows")]
-                    { // wtf bro. why must particles exist on Windows?
-                        let emitter_config = self.res.emitter.emitter.config.clone();
-                        let emitter_square_config = self.res.emitter.emitter_square.config.clone();
-                        self.res.emitter.emitter_square.config.rng = None;
-                        self.res.emitter.emitter.config.size = 0.0;
-                        self.res.emitter.emitter_square.config.size = 0.0;
-                        self.res.emitter.emitter.emit(vec2(0.0, 0.0), 1);
-                        self.res.emitter.emitter_square.emit(vec2(0.0, 0.0), 1);
-                        self.res.emitter.emitter.config = emitter_config;
-                        self.res.emitter.emitter_square.config = emitter_square_config;
-                    }
-
                     GYRO.lock().unwrap().reset_gyroscope();
-                    self.res.alpha = 1. - (1. - time / Self::BEFORE_TIME).clamp(0., 1.).powi(3);
+                    if self.res.config.enter_animation {
+                        self.res.alpha = 1. - (1. - time / Self::BEFORE_TIME).clamp(0., 1.).powi(3);
+                    } else {
+                        self.res.alpha = 1.;
+                    };
                     self.exercise_range.start
                 }
             }
@@ -1094,14 +1099,18 @@ impl Scene for GameScene {
                 time
             }
             State::Playing => {
-                if time > self.res.track_length + WAIT_TIME {
+                if time >= self.res.track_length + WAIT_TIME {
+                    self.music.pause()?;
                     self.state = State::Ending;
                 }
                 time
             }
             State::Ending => {
                 let t = time - self.res.track_length - WAIT_TIME;
-                if t >= AFTER_TIME + 0.3 {
+                if t >= Self::WAIT_AFTER_TIME {
+                    if self.res.config.autoplay() {
+                        self.judge.commit_all(&mut self.chart);
+                    }
                     let mut record_data = None;
                     // TODO strengthen the protection
                     #[cfg(feature = "closed")]
@@ -1146,7 +1155,7 @@ impl Scene for GameScene {
                     };
                 }
                 self.res.alpha = 1. - (t / AFTER_TIME).clamp(0., 1.).powi(2);
-                self.res.track_length
+                self.res.track_length + WAIT_TIME
             }
         };
 
@@ -1206,7 +1215,7 @@ impl Scene for GameScene {
                         duration: Some(0.1),
                         dim: false
                     };
-                    res.config.disable_audio = true;
+                    res.disable_audio = true;
                 }
             } else if matches!(self.state, State::Playing) && !self.pause_rewind.dim { // State::BeforeMusic
                 if !self.music.paused() {
@@ -1238,7 +1247,7 @@ impl Scene for GameScene {
                     duration: Some(0.1),
                     dim: false
                 };
-                res.config.disable_audio = true;
+                res.disable_audio = true;
             }
             if is_key_pressed(KeyCode::Q) {
                 self.should_exit = true;
@@ -1316,10 +1325,10 @@ impl Scene for GameScene {
                 1. - (t / Self::BEFORE_DURATION).clamp(0., 1.)
             }
         };
-        let ratio = if res.config.chart_ratio == 1. || res.config.disable_loading {
-            res.config.chart_ratio
-        } else {
+        let ratio = if res.config.chart_ratio != 1. && res.config.enter_animation {
             1. + (res.config.chart_ratio - 1.) * ease_in_out_quartic(p)
+        } else {
+            res.config.chart_ratio
         };
 
         if res.update_size(ui.viewport) || self.mode == GameMode::View {

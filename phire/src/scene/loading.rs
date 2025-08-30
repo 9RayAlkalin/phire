@@ -45,6 +45,33 @@ pub struct LoadingScene {
 impl LoadingScene {
     pub const TOTAL_TIME: f32 = BEFORE_TIME + TRANSITION_TIME + WAIT_TIME;
 
+    pub async fn load_background(fs: &mut Box<dyn FileSystem>, config: &Config, path: &str) -> Result<(Texture2D, Texture2D)> {
+        let image = image::load_from_memory(&fs.load_file(path).await?).context("Failed to decode image")?;
+        let (w, h) = (image.width(), image.height());
+        let size = w as usize * h as usize;
+
+        let mut blurred_rgb = image.to_rgb8();
+        let mut vec = unsafe { Vec::from_raw_parts(std::mem::transmute(blurred_rgb.as_mut_ptr()), size, size) };
+        fastblur::gaussian_blur(&mut vec, w as _, h as _, config.bg_blurriness);
+        std::mem::forget(vec);
+        let mut blurred = Vec::with_capacity(size * 4);
+        for input in blurred_rgb.chunks_exact(3) {
+            //blurred.extend_from_slice(input);
+            blurred.push(input[0]);
+            blurred.push(input[1]);
+            blurred.push(input[2]);
+            blurred.push(255);
+        }
+        Ok((
+            Texture2D::from_rgba8(w as _, h as _, &image.into_rgba8()),
+            Texture2D::from_image(&Image {
+                width: w as _,
+                height: h as _,
+                bytes: blurred,
+            }),
+        ))
+    }
+
     pub async fn new(
         preload_chart: Option<(Chart, ChartFormat)>,
         mode: GameMode,
@@ -55,34 +82,7 @@ impl LoadingScene {
         upload_fn: Option<UploadFn>,
         update_fn: Option<UpdateFn>,
     ) -> Result<Self> {
-        async fn load(fs: &mut Box<dyn FileSystem>, config: &Config, path: &str) -> Result<(Texture2D, Texture2D)> {
-            let image = image::load_from_memory(&fs.load_file(path).await?).context("Failed to decode image")?;
-            let (w, h) = (image.width(), image.height());
-            let size = w as usize * h as usize;
-
-            let mut blurred_rgb = image.to_rgb8();
-            let mut vec = unsafe { Vec::from_raw_parts(std::mem::transmute(blurred_rgb.as_mut_ptr()), size, size) };
-            fastblur::gaussian_blur(&mut vec, w as _, h as _, config.bg_blurriness);
-            std::mem::forget(vec);
-            let mut blurred = Vec::with_capacity(size * 4);
-            for input in blurred_rgb.chunks_exact(3) {
-                //blurred.extend_from_slice(input);
-                blurred.push(input[0]);
-                blurred.push(input[1]);
-                blurred.push(input[2]);
-                blurred.push(255);
-            }
-            Ok((
-                Texture2D::from_rgba8(w as _, h as _, &image.into_rgba8()),
-                Texture2D::from_image(&Image {
-                    width: w as _,
-                    height: h as _,
-                    bytes: blurred,
-                }),
-            ))
-        }
-
-        let background = match load(&mut fs, config, &info.illustration).await {
+        let background = match Self::load_background(&mut fs, config, &info.illustration).await {
             Ok((ill, bg)) => Some((ill, bg)),
             Err(err) => {
                 warn!("failed to load background: {err:?}");
@@ -138,7 +138,7 @@ impl Scene for LoadingScene {
                         self.load_task = None;
                         self.next_scene =
                             Some(game_scene.map_or_else(|e| NextScene::PopWithResult(Box::new(e)), |it| NextScene::Replace(Box::new(it))));
-                        self.finish_time = if self.config.disable_loading { 0. } else { tm.now() as f32 + BEFORE_TIME };
+                        self.finish_time = tm.now() as f32 + BEFORE_TIME;
                         break;
                     }
                 }
@@ -269,7 +269,7 @@ impl Scene for LoadingScene {
         if matches!(self.next_scene, Some(NextScene::PopWithResult(_))) {
             return self.next_scene.take().unwrap();
         }
-        if tm.now() as f32 > self.finish_time + TRANSITION_TIME + WAIT_TIME || self.config.disable_loading {
+        if tm.now() as f32 > self.finish_time + TRANSITION_TIME + WAIT_TIME || !self.config.enter_animation {
             if let Some(scene) = self.next_scene.take() {
                 return scene;
             }
