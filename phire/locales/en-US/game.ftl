@@ -10,4 +10,4 @@ ex-time-out-of-range = Time is out of range
 ex-invalid-format = Invalid format
 ex-time-set = Time changed
 ex-time-start = Time started
-ex-time-stop = Time stopped
+ex-time-end = Time stopped
