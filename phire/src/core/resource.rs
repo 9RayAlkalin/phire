@@ -477,6 +477,7 @@ pub struct Resource {
     pub sfx_flick: Sfx,
     pub extra_sfxs: SfxMap,
     pub frame_times: VecDeque<f64>, // frame interval time
+    pub disable_audio: bool,
 
     pub chart_target: Option<MSRenderTarget>,
     pub no_effect: bool,
@@ -555,7 +556,8 @@ impl Resource {
 
         let mut audio = create_audio_manger(&config)?;
         let music = AudioClip::new(fs.load_file(&info.music).await?)?;
-        let track_length = music.length() as f32;
+        let music_length = music.length() as f32;
+        let track_length = config.play_end_time.unwrap_or(music_length).min(music_length);
         let buffer_size = Some(BUFFER_SIZE);
         let sfx_click = audio.create_sfx(res_pack.sfx_click.clone(), buffer_size)?;
         let sfx_drag = audio.create_sfx(res_pack.sfx_drag.clone(), buffer_size)?;
@@ -607,6 +609,7 @@ impl Resource {
             sfx_flick,
             extra_sfxs: SfxMap::new(),
             frame_times,
+            disable_audio: false,
 
             chart_target: None,
             no_effect,
