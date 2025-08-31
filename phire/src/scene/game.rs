@@ -512,7 +512,7 @@ impl GameScene {
             ui.fill_circle(pause_center.x, pause_center.y, 0.05 * scale_ratio, Color::new(1., 1., 1., 0.5));
         }
 
-        let score = (self.judge.score() as f64 / 1_000_000. * res.info.score_total as f64) as u32;
+        let score = (self.judge.score().round() / 1_000_000. * res.info.score_total as f64) as u32;
         let score = if res.config.roman {
             Self::int_to_roman(score)
         } else if res.config.chinese {

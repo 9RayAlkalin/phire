@@ -208,12 +208,11 @@ impl JudgeInner {
         (self.counts[0] as f64 + self.counts[1] as f64 * 0.65) / cnt as f64
     }
 
-    pub fn score(&self) -> u32 {
+    pub fn score(&self) -> f64 {
         if self.counts[0] == self.num_of_notes {
-            1_000_000
+            1_000_000.0
         } else {
-            let score = (0.9 * self.accuracy() + self.max_combo as f64 / self.num_of_notes as f64 * 0.1) * 1_000_000.;
-            score.round() as u32
+            (0.9 * self.accuracy() + self.max_combo as f64 / self.num_of_notes as f64 * 0.1) * 1_000_000.
         }
     }
 
@@ -310,7 +309,7 @@ impl Judge {
     }
 
     #[inline]
-    pub fn score(&self) -> u32 {
+    pub fn score(&self) -> f64 {
         self.inner.score()
     }
 
@@ -1067,7 +1066,7 @@ impl EventHandler for Handler {
 
 #[derive(Default)]
 pub struct PlayResult {
-    pub score: u32,
+    pub score: f64,
     pub accuracy: f64,
     pub max_combo: u32,
     pub num_of_notes: u32,
