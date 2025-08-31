@@ -191,16 +191,14 @@ impl Note {
         tr.x *= incline_val * ctrl_obj.pos.now_opt().unwrap_or(1.);
         tr.y += base;
         let mut scale = self.object.scale.now_with_def(1.0, 1.0);
-        if can_scale_x {
-            scale.x *= ctrl_obj.size.now_opt().unwrap_or(1.0);
-        } else {
+        if !can_scale_x {
             scale.x = 1.0;
         };
-        if res.info.note_uniform_scale && can_scale_y {
-            scale.y *= ctrl_obj.size.now_opt().unwrap_or(1.0);
-        } else {
+        scale.x *= ctrl_obj.size.now_opt().unwrap_or(1.0);
+        if !res.info.note_uniform_scale || !can_scale_y {
             scale.y = 1.0;
         };
+        scale.y *= ctrl_obj.size.now_opt().unwrap_or(1.0);
         self.object.now_rotation().append_nonuniform_scaling(&scale).append_translation(&tr)
     }
 
