@@ -755,7 +755,7 @@ impl GameScene {
                             duration: Some(0.1),
                             dim: false,
                         };
-                        res.disable_audio = true;
+                        res.disable_hit_fx = true;
                     }
                     Some(1) => {
                         if self.mode == GameMode::Exercise && tm.now() > self.exercise_range.end as f64 && self.exercise_range.end - 0.1 < res.track_length {
@@ -773,7 +773,7 @@ impl GameScene {
                             duration: Some(1.0),
                             dim: true
                         };
-                        self.res.disable_audio = true;
+                        self.res.disable_hit_fx = true;
                     }
                     _ => {}
                 }
@@ -903,7 +903,7 @@ impl GameScene {
                     duration: None,
                     dim: false
                 };
-                self.res.disable_audio = false;
+                self.res.disable_hit_fx = false;
             } else if dim {
                 let a = (t / duration).clamp(0.0, 1.0) * PAUSE_BACKGROUND_ALPHA as f64;
                 let h = 1. / self.res.aspect_ratio;
@@ -1014,6 +1014,12 @@ impl Scene for GameScene {
         reset!(self, self.res, tm);
         set_camera(&self.res.camera);
         self.first_in = true;
+        self.pause_rewind = PauseRewind {
+            time: Some(tm.now()),
+            duration: Some(0.1),
+            dim: false,
+        };
+        self.res.disable_hit_fx = true;
         Ok(())
     }
 
@@ -1215,7 +1221,7 @@ impl Scene for GameScene {
                         duration: Some(0.1),
                         dim: false
                     };
-                    res.disable_audio = true;
+                    res.disable_hit_fx = true;
                 }
             } else if matches!(self.state, State::Playing) && !self.pause_rewind.dim { // State::BeforeMusic
                 if !self.music.paused() {
@@ -1247,7 +1253,7 @@ impl Scene for GameScene {
                     duration: Some(0.1),
                     dim: false
                 };
-                res.disable_audio = true;
+                res.disable_hit_fx = true;
             }
             if is_key_pressed(KeyCode::Q) {
                 self.should_exit = true;

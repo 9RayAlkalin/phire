@@ -477,7 +477,7 @@ pub struct Resource {
     pub sfx_flick: Sfx,
     pub extra_sfxs: SfxMap,
     pub frame_times: VecDeque<f64>, // frame interval time
-    pub disable_audio: bool,
+    pub disable_hit_fx: bool,
 
     pub chart_target: Option<MSRenderTarget>,
     pub no_effect: bool,
@@ -609,7 +609,7 @@ impl Resource {
             sfx_flick,
             extra_sfxs: SfxMap::new(),
             frame_times,
-            disable_audio: false,
+            disable_hit_fx: false,
 
             chart_target: None,
             no_effect,

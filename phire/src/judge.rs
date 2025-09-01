@@ -901,13 +901,12 @@ impl Judge {
                     break;
                 }
                 note.judge = if matches!(note.kind, NoteKind::Hold { .. }) {
-                    if !res.disable_audio {
+                    if note.time >= res.config.play_start_time && !res.disable_hit_fx {
                         note.hitsound.play(res);
                     }
                     self.judgements.borrow_mut().push((t, line_id as _, *id, Err(true)));
-                    //println!("{}\t{}\t{}", t, note.time, t - note.time);
-                    // 都是AutoPlay了为什么还要输出判定时间差
-                    //JudgeStatus::Hold(true, t, (t - note.time) / spd, false, f32::INFINITY)
+                    // AutoPlay 无需输出打击时间差
+                    // JudgeStatus::Hold(true, t, (t - note.time) / spd, false, f32::INFINITY)
                     JudgeStatus::Hold(true, t, judge_time, true, f32::INFINITY)
                 } else {
                     judgements.push((line_id, *id));
@@ -922,17 +921,17 @@ impl Judge {
             }
         }
         for (line_id, id) in judgements.into_iter() {
-            let (note_transform, note_kind, note_hitsound) = {
+            let note_transform = {
                 let line = &mut chart.lines[line_id];
                 let note = &mut line.notes[id as usize];
                 let nt = if matches!(note.kind, NoteKind::Hold { .. }) { t } else { note.time };
                 line.object.set_time(nt);
                 note.object.set_time(nt);
-                (note.object.now(res), note.kind.clone(), note.hitsound.clone())
+                note.object.now(res)
             };
             let line = &chart.lines[line_id];
             let note = &line.notes[id as usize];
-            match note_kind {
+            match note.kind {
                 NoteKind::Click => {
                     let color = if let Some(color) = note.hit_fx_color.now_opt() {
                         color
@@ -940,10 +939,14 @@ impl Judge {
                         fx_color
                     };
                     self.commit(t, judge_type, line_id as _, id, 0.);
-                    res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
-                        res.emit_at_origin(line.notes[id as usize].rotation(line), color)
-        
-                    });
+                    if note.time >= res.config.play_start_time && !res.disable_hit_fx {
+                        res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
+                            res.emit_at_origin(line.notes[id as usize].rotation(line), color)
+                        });
+                        if !res.config.all_bad {
+                            note.hitsound.play(res)
+                        }
+                    }
                 }
                 NoteKind::Hold { .. } => {
                     self.commit(t, judge_type_hold, line_id as _, id, 0.);
@@ -955,21 +958,14 @@ impl Judge {
                         res.res_pack.info.fx_perfect()
                     };
                     self.commit(t, Judgement::Perfect, line_id as _, id, 0.);
-                    res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
-                        res.emit_at_origin(line.notes[id as usize].rotation(line), color)
-        
-                    });
+                    if note.time >= res.config.play_start_time && !res.disable_hit_fx {
+                        res.with_model(line.now_transform(res, &chart.lines) * note_transform, |res| {
+                            res.emit_at_origin(line.notes[id as usize].rotation(line), color)
+                        });
+                        note.hitsound.play(res)
+                    }
                 },
             };
-
-            if !res.disable_audio {
-                match note_kind {
-                    NoteKind::Click => if !res.config.all_bad {note_hitsound.play(res)},
-                    NoteKind::Hold { .. } => (),
-                    _ => note_hitsound.play(res),
-                }
-            }
-
         }
     }
 

@@ -142,6 +142,9 @@ impl Note {
     }
 
     pub fn update(&mut self, res: &mut Resource, parent_rot: f32, parent_tr: &Matrix, ctrl_obj: &mut CtrlObject, line_height: f32, bpm_list: &mut BpmList, index: usize) {
+        if self.time < res.config.play_start_time || res.disable_hit_fx {
+            return;
+        }
         self.object.set_time(res.time);
         //let mut _immediate_particle = false;
         let color = if let JudgeStatus::Hold(perfect, ref mut at, ..) = self.judge {
