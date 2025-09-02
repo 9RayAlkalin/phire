@@ -31,7 +31,7 @@ macroquad = { git = "https://github.com/2278535805/prpr-macroquad", default-feat
 md5 = "0.7"
 nalgebra = "*"
 once_cell = "*"
-openssl = { version = "*", features = ["vendored"] }
+# openssl = { version = "*", features = ["vendored"] }
 pollster = "0.2.5"
 phire = { path = "../phire" }
 rand = "0.8.5"
