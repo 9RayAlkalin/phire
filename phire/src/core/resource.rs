@@ -361,10 +361,9 @@ impl ParticleEmitter {
         } else {
             ParticleShape::Rectangle { aspect_ratio: 1.0 }
         };
-        let rng = Pcg32::seed_from_u64(RNG_SEED);
         let emitter_square_config = EmitterConfig {
             max_particles: config.max_particles * res_pack.info.particle_count,
-            rng: Some(rng),
+            rng: Some(Pcg32::seed_from_u64(RNG_SEED)),
             local_coords: false,
             lifetime: res_pack.info.hit_fx_duration,
             lifetime_randomness: 0.0,
@@ -622,7 +621,7 @@ impl Resource {
 
     pub fn reset(&mut self) {
         self.judge_line_color = self.res_pack.info.line_perfect();
-        self.emitter = ParticleEmitter::new(&self.res_pack, self.config.note_scale, Some(self.config.clone()));
+        self.emitter.emitter_square.config.rng = Some(Pcg32::seed_from_u64(RNG_SEED));
     }
 
     pub fn emit_at_origin(&mut self, rotation: f32, color: Color) {
