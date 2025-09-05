@@ -434,7 +434,7 @@ impl JudgeLine {
                     _ => {}
                 }
             }
-            let (vw, vh) = (1.2 / res.config.chart_ratio, 1.0 / res.config.chart_ratio);
+            let (vw, vh) = (1.0 / res.config.chart_ratio, 1.0 / res.config.chart_ratio);
             let p = [
                 res.screen_to_world(Point::new(-vw, -vh)),
                 res.screen_to_world(Point::new(-vw, vh)),
@@ -471,8 +471,18 @@ impl JudgeLine {
                                 }
                             };
                             let note_height = (note.height - line_height + note.object.translation.1.now()) / res.aspect_ratio * speed;
-                            if note_height < height_below {
-                                continue;
+                            match note.kind {   
+                                NoteKind::Hold { end_height, .. } => {
+                                    if end_height < height_below {
+                                        continue;
+                                    }
+                                    
+                                },
+                                _ => {
+                                    if note_height < height_below {
+                                        continue;
+                                    }
+                                }
                             }
                             if note_height > height_above {
                                 break;
@@ -508,8 +518,18 @@ impl JudgeLine {
                                     }
                                 };
                                 let note_height = (note.height - line_height + note.object.translation.1.now()) / res.aspect_ratio * speed;
-                                if note_height < -height_above {
-                                    continue;
+                                match note.kind {   
+                                    NoteKind::Hold { end_height, .. } => {
+                                        if end_height < height_below {
+                                            continue;
+                                        }
+                                        
+                                    },
+                                    _ => {
+                                        if note_height < height_below {
+                                            continue;
+                                        }
+                                    }
                                 }
                                 if note_height > -height_below {
                                     break;
