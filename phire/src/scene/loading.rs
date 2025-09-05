@@ -10,7 +10,7 @@ use crate::{
     time::TimeManager,
     ui::Ui,
 };
-use ::rand::{seq::SliceRandom, thread_rng};
+use ::rand::{rng, seq::IndexedRandom};
 use anyhow::{Context, Result};
 use macroquad::prelude::*;
 use regex::Regex;
@@ -99,7 +99,7 @@ impl LoadingScene {
                 .map(|line| line.to_string())
                 .collect::<Vec<_>>();
 
-            info.tip = Some(tips.choose(&mut thread_rng()).unwrap().to_owned());
+            info.tip = Some(tips.choose(&mut rng()).unwrap().to_owned());
         }
         let future = Box::pin(GameScene::new(preload_chart, mode, info.clone(), config.clone(), fs, player, background.clone(), illustration.clone(), upload_fn, update_fn));
         let charter = Regex::new(r"\[!:[0-9]+:([^:]*)\]").unwrap().replace_all(&info.charter, "$1").to_string();
