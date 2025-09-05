@@ -830,6 +830,9 @@ impl GameScene {
                         .map(|it| (0, it.id));
                 }
                 ui.text(fmt_time(t)).pos(0., -0.23).anchor(0.5, 0.).size(0.8).draw();
+                if self.pause_rewind.time.is_some() {
+                    self.exercise_press = None;
+                }
                 if let Some((ctrl, id)) = &self.exercise_press {
                     if let Some(touch) = Judge::get_touches(1.0).iter().rfind(|it| it.id == *id) {
                         let x = touch.position.x;
