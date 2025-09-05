@@ -399,23 +399,20 @@ async fn parse_notes(
         };
         let hitsound = match note.hitsound {
             Some(s) => {
-                // TODO: RPE doc needed...
-                if s == "flick.mp3" {
-                    HitSound::Flick
-                } else if s == "tap.mp3" {
-                    HitSound::Click
-                } else if s == "drag.mp3" {
-                    HitSound::Drag
-                } else {
-                    if hitsounds.get(&s).is_none() {
-                        let data = fs.load_file(&s).await;
-                        if let Ok(data) = data {
-                            hitsounds.insert(s.clone(), AudioClip::new(data)?);
-                        } else {
-                            ptl!(bail "hitsound-missing", "name" => s);
+                match s.trim() {
+                    "tap.mp3" | "tap.ogg" => HitSound::Click,
+                    "drag.mp3" | "drag.ogg" => HitSound::Drag,
+                    "flick.mp3" | "flick.ogg" => HitSound::Flick,
+                    _ => {
+                        if hitsounds.get(&s).is_none() {
+                            if let Ok(data) = fs.load_file(&s).await {
+                                hitsounds.insert(s.clone(), AudioClip::new(data)?);
+                            } else {
+                                ptl!(bail "hitsound-missing", "name" => s);
+                            }
                         }
+                        HitSound::Custom(String::from_str(&s)?)
                     }
-                    HitSound::Custom(String::from_str(&s)?)
                 }
             }
             None => HitSound::default_from_kind(&kind),
