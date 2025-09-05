@@ -1037,9 +1037,29 @@ impl Scene for GameScene {
     }
 
     fn resume(&mut self, tm: &mut TimeManager) -> Result<()> {
-        // if !matches!(self.state, State::Playing) {
-        //     tm.resume();
-        // }
+        if tm.paused() && !matches!(self.state, State::Playing) {
+            tm.resume();
+        }
+        Ok(())
+    }
+
+    fn foucus_pause(&mut self, tm: &mut TimeManager) -> Result<()> {
+        if !tm.paused() {
+            self.pause_rewind = PauseRewind {
+                time: None,
+                duration: None,
+                dim: false
+            };
+            self.music.pause()?;
+            tm.pause();
+        }
+        Ok(())
+    }
+
+    fn foucus_resume(&mut self, tm: &mut TimeManager) -> Result<()> {
+        if tm.paused() && !matches!(self.state, State::Playing) {
+            tm.resume();
+        }
         Ok(())
     }
 
