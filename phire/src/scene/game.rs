@@ -608,6 +608,7 @@ impl GameScene {
                     .anchor(0.5, 0.5)
                     .size(0.34 * scale_ratio)
                     .color(Color { a: color.a * c.a, ..color })
+                    .multiline()
                     .draw();
             });
         }
@@ -627,6 +628,7 @@ impl GameScene {
                     .anchor(0., 1.)
                     .size(text_size)
                     .color(Color { a: color.a * c.a, ..color })
+                    .multiline()
                     .draw();
             });
         }
@@ -644,6 +646,7 @@ impl GameScene {
                     .anchor(1., 1.)
                     .size(text_size)
                     .color(Color { a: color.a * c.a, ..color })
+                    .multiline()
                     .draw();
             });
         }
@@ -653,6 +656,7 @@ impl GameScene {
                 .anchor(0.5, 1.)
                 .size(0.25 * scale_ratio)
                 .color(Color::new(1., 1., 1., 0.5 * c.a))
+                .multiline()
                 .draw();
             if res.config.chart_ratio <= 0.95 {
                 ui.text(&res.config.watermark)
@@ -660,6 +664,7 @@ impl GameScene {
                 .anchor(0.5, 1.)
                 .size(0.25 * scale_ratio / res.config.chart_ratio)
                 .color(Color::new(1., 1., 1., 0.5 * c.a))
+                .multiline()
                 .draw();
             }
         };
