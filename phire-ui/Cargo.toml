@@ -31,7 +31,6 @@ macroquad = { git = "https://github.com/2278535805/prpr-macroquad", default-feat
 md5 = "0.7"
 nalgebra = "*"
 once_cell = "*"
-# openssl = { version = "*", features = ["vendored"] }
 pollster = "0.2.5"
 phire = { path = "../phire" }
 rand = "0.9.2"
@@ -58,6 +57,7 @@ logos = "0.13.0"
 ndk-sys = "0.2"
 ndk-context = "0.1"
 sasa = { git = "https://github.com/2278535805/sasa", default-features = false, features = ["oboe"] }
+openssl = { version = "*", features = ["vendored"] }
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
 sasa = { git = "https://github.com/2278535805/sasa" }
