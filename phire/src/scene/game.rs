@@ -608,6 +608,7 @@ impl GameScene {
                     .anchor(0.5, 0.5)
                     .size(0.34 * scale_ratio)
                     .color(Color { a: color.a * c.a, ..color })
+                    .multiline()
                     .draw();
             });
         }

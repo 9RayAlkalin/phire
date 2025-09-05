@@ -620,7 +620,7 @@ pub fn ease_in_out_quintic(t: f32) -> f32 {
 }
 
 lazy_static! {
-    static ref RE_FILTER: Regex = Regex::new(r##"[^a-zA-Z0-9!"'#$%&'()*+,\-.\/:;<=>?@\[\]^_`{|}~ΜΟΒСՕⅭОмвＣＯＭＢМⅯВϹȮΌϺϺƁ]"##).unwrap();
+    static ref RE_FILTER: Regex = Regex::new(r##"[^a-zA-Z0-9!"'#$%&'()*+,\-.\/:;<=>?@\\\[\]^_`{|}~ΜΟΒСՕⅭОмвＣＯＭＢМⅯВϹȮΌϺϺƁ]"##).unwrap();
     static ref RE_VALIDATE: Regex = Regex::new(r"^[CСⅭＣϹ][OՕΟ0ОＯȮΌ][MΜмＭМⅯϺϺ][BΒ8вＢВ][OՕΟ0ОＯȮΌ]$").unwrap();
 }
 
