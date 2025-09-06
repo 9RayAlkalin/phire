@@ -13,7 +13,7 @@ use crate::{
     bin::BinaryReader,
     config::{Config, Mods},
     core::{BadNote, Chart, ChartExtra, Effect, Point, Resource, UIElement, BUFFER_SIZE},
-    ext::{draw_text_aligned, draw_text_aligned_opt, ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
+    ext::{draw_text_aligned, draw_text_aligned_opt_width, ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
     fs::FileSystem,
     gyro::GYRO,
     info::{ChartFormat, ChartInfo},
@@ -599,25 +599,25 @@ impl GameScene {
                     draw_text_aligned(ui, "AUTOPLAY", 0., btm + ct.y, (0.5, 0.5), 0.34 * scale_ratio, Color { a: color.a * c.a, ..color });
                     return;
                 }
-                draw_text_aligned_opt(ui, &res.config.combo, 0., btm + ct.y, (0.5, 0.5), 0.34 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.55 * aspect_ratio);
+                draw_text_aligned_opt_width(ui, &res.config.combo, 0., btm + ct.y, (0.5, 0.5), 0.34 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.55 * aspect_ratio);
             });
         }
         let lf = -aspect_ratio + margin;
         let bt = -top - eps * 3.5 + (1. - p) * 0.4;
         if res.config.render_ui_name {
             self.chart.with_element(ui, res, UIElement::Name, Some((lf, bt)), Some((lf, bt)), |ui, color| {
-                draw_text_aligned_opt(ui, &res.info.name, lf, bt, (0., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
+                draw_text_aligned_opt_width(ui, &res.info.name, lf, bt, (0., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
             });
         }
         if res.config.render_ui_level {
             self.chart.with_element(ui, res, UIElement::Level, Some((-lf, bt)), Some((-lf, bt)), |ui, color| {
-                draw_text_aligned_opt(ui, &res.info.level, -lf, bt, (1., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
+                draw_text_aligned_opt_width(ui, &res.info.level, -lf, bt, (1., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
             });
         }
         if !res.config.watermark.is_empty() {
-            draw_text_aligned_opt(ui, &res.config.watermark, 0., -top * 0.98 + (1. - p) * 0.4, (0.5, 1.), 0.25 * scale_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
+            draw_text_aligned_opt_width(ui, &res.config.watermark, 0., -top * 0.98 + (1. - p) * 0.4, (0.5, 1.), 0.25 * scale_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
             if res.config.chart_ratio <= 0.95 {
-                draw_text_aligned_opt(ui, &res.config.watermark, 0., (-top * 0.98 + (1. - p) * 0.4) / res.config.chart_ratio, (0.5, 1.), 0.25 * scale_ratio / res.config.chart_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
+                draw_text_aligned_opt_width(ui, &res.config.watermark, 0., (-top * 0.98 + (1. - p) * 0.4) / res.config.chart_ratio, (0.5, 1.), 0.25 * scale_ratio / res.config.chart_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
             }
         };
         let hw = 0.003;
