@@ -13,7 +13,7 @@ use crate::{
     bin::BinaryReader,
     config::{Config, Mods},
     core::{BadNote, Chart, ChartExtra, Effect, Point, Resource, UIElement, BUFFER_SIZE},
-    ext::{ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
+    ext::{draw_text_aligned, draw_text_aligned_opt, ease_in_out_quartic, get_latency, parse_time, push_frame_time, screen_aspect, semi_white, validate_combo, RectExt, SafeTexture},
     fs::FileSystem,
     gyro::GYRO,
     info::{ChartFormat, ChartInfo},
@@ -589,83 +589,35 @@ impl GameScene {
                     .anchor(0.5, 0.5)
                     .color(Color { a: color.a * c.a, ..color })
                     .size(text_size)
+                    .multiline()
                     .draw();
             });
             let mut text = ui.text(&res.config.combo).size(0.34 * scale_ratio);
             let ct = text.measure().center();
             self.chart.with_element(ui, res, UIElement::Combo, Some((0., btm + ct.y)), Some((0., btm + ct.y)), |ui, color| {
                 if (cfg!(feature = "play") && res.config.autoplay()) || validate_combo(&res.config.combo) || res.config.combo.len() > 50 {
-                    ui.text("AUTOPLAY")
-                        .pos(0., btm + ct.y)
-                        .anchor(0.5, 0.5)
-                        .size(0.34 * scale_ratio)
-                        .color(Color { a: color.a * c.a, ..color })
-                        .draw();
+                    draw_text_aligned(ui, "AUTOPLAY", 0., btm + ct.y, (0.5, 0.5), 0.34 * scale_ratio, Color { a: color.a * c.a, ..color });
                     return;
                 }
-                ui.text(&res.config.combo)
-                    .pos(0., btm + ct.y)
-                    .anchor(0.5, 0.5)
-                    .size(0.34 * scale_ratio)
-                    .color(Color { a: color.a * c.a, ..color })
-                    .multiline()
-                    .draw();
+                draw_text_aligned_opt(ui, &res.config.combo, 0., btm + ct.y, (0.5, 0.5), 0.34 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.55 * aspect_ratio);
             });
         }
         let lf = -aspect_ratio + margin;
         let bt = -top - eps * 3.5 + (1. - p) * 0.4;
         if res.config.render_ui_name {
-            let mut text_size = 0.505 * scale_ratio;
-            let mut text = ui.text(&res.info.name).size(text_size);
-            let max_width = 0.9 * aspect_ratio;
-            let text_width = text.measure().w;
-            if text_width > max_width {
-                text_size *= max_width / text_width
-            }
             self.chart.with_element(ui, res, UIElement::Name, Some((lf, bt)), Some((lf, bt)), |ui, color| {
-                ui.text(&res.info.name)
-                    .pos(lf, bt)
-                    .anchor(0., 1.)
-                    .size(text_size)
-                    .color(Color { a: color.a * c.a, ..color })
-                    .multiline()
-                    .draw();
+                draw_text_aligned_opt(ui, &res.info.name, lf, bt, (0., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
             });
         }
         if res.config.render_ui_level {
-            let mut text_size = 0.505 * scale_ratio;
-            let mut text = ui.text(&res.info.level).size(text_size);
-            let max_width = 0.9 * aspect_ratio;
-            let text_width = text.measure().w;
-            if text_width > max_width {
-                text_size *= max_width / text_width
-            }
             self.chart.with_element(ui, res, UIElement::Level, Some((-lf, bt)), Some((-lf, bt)), |ui, color| {
-                ui.text(&res.info.level)
-                    .pos(-lf, bt)
-                    .anchor(1., 1.)
-                    .size(text_size)
-                    .color(Color { a: color.a * c.a, ..color })
-                    .multiline()
-                    .draw();
+                draw_text_aligned_opt(ui, &res.info.level, -lf, bt, (1., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
             });
         }
         if !res.config.watermark.is_empty() {
-            ui.text(&res.config.watermark)
-                .pos(0., -top * 0.98 + (1. - p) * 0.4)
-                .anchor(0.5, 1.)
-                .size(0.25 * scale_ratio)
-                .color(Color::new(1., 1., 1., 0.5 * c.a))
-                .multiline()
-                .draw();
+            draw_text_aligned_opt(ui, &res.config.watermark, 0., -top * 0.98 + (1. - p) * 0.4, (0.5, 1.), 0.25 * scale_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
             if res.config.chart_ratio <= 0.95 {
-                ui.text(&res.config.watermark)
-                .pos(0., (-top * 0.98 + (1. - p) * 0.4) / res.config.chart_ratio)
-                .anchor(0.5, 1.)
-                .size(0.25 * scale_ratio / res.config.chart_ratio)
-                .color(Color::new(1., 1., 1., 0.5 * c.a))
-                .multiline()
-                .draw();
+                draw_text_aligned_opt(ui, &res.config.watermark, 0., (-top * 0.98 + (1. - p) * 0.4) / res.config.chart_ratio, (0.5, 1.), 0.25 * scale_ratio / res.config.chart_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
             }
         };
         let hw = 0.003;

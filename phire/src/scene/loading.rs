@@ -2,7 +2,7 @@ use super::{draw_background, ending::RecordUpdateState, game::GameMode, GameScen
 use crate::{
     config::Config,
     core::{Chart, Resource},
-    ext::{draw_illustration, draw_parallelogram, draw_text_aligned, draw_text_aligned_fix, poll_future, LocalTask, SafeTexture, BLACK_TEXTURE},
+    ext::{draw_illustration, draw_parallelogram, draw_text_aligned, draw_text_aligned_opt, poll_future, LocalTask, SafeTexture, BLACK_TEXTURE},
     fs::FileSystem,
     info::{ChartFormat, ChartInfo},
     judge::Judge,
@@ -179,22 +179,8 @@ impl Scene for LoadingScene {
         draw_parallelogram(main, None, Color::new(0., 0., 0., 0.6), false);
         let p = (main.x + main.w * 0.085, main.y + main.h * 0.35);
 
-        let mut text_size = 0.73;
-        let mut text = ui.text(&self.info.name).pos(p.0, p.1).anchor(0., 0.5).size(text_size);
-        let max_width = main.w * 0.60;
-        let text_width = text.measure().w;
-        if text_width > max_width {
-            text_size *= max_width / text_width
-        }
-        drop(text);
-        ui.text(&self.info.name)
-            .pos(p.0, p.1)
-            .anchor(0., 0.5)
-            //.max_width(main.w * 0.6)
-            .size(text_size)
-            .draw();
-        
-        draw_text_aligned_fix(ui, &self.info.composer, main.x + main.w * 0.09, main.y + main.h * 0.74, (0., 0.5), 0.363, WHITE, 0.40);
+        draw_text_aligned_opt(ui, &self.info.name, p.0, p.1, (0., 0.5), 0.73, WHITE, main.w * 0.65);
+        draw_text_aligned_opt(ui, &self.info.composer, main.x + main.w * 0.09, main.y + main.h * 0.74, (0., 0.5), 0.363, WHITE, main.w * 0.60);
 
         let ext = 0.04;
         let sub = Rect::new(main.x + main.w * 0.724, main.y - main.h * ext, main.w * 0.25, main.h * (1. + ext * 2.));
@@ -204,13 +190,13 @@ impl Scene for LoadingScene {
         draw_parallelogram(sub, None, WHITE, true);
         //draw_text_aligned(ui, &(self.info.difficulty as u32).to_string(), ct.x, ct.y + sub.h * 0.05, (0.5, 1.), 0.88, BLACK);
         if self.config.difficulty.len() > 0 {
-            draw_text_aligned_fix(ui, &self.config.difficulty
+            draw_text_aligned_opt(ui, &self.config.difficulty
                 , ct.x, ct.y + sub.h * 0.05, (0.5, 1.), 0.90, BLACK, main.w * 0.18
             );
         } else {
             let first_str = Regex::new(r"[0-9?]+").unwrap();
             let last_str = Regex::new(r"[0-9?.]+").unwrap();
-            draw_text_aligned_fix(ui, self.info.level
+            draw_text_aligned_opt(ui, self.info.level
                 .split_whitespace()
                 .rev()
                 .nth(0)
@@ -226,7 +212,7 @@ impl Scene for LoadingScene {
             );
         }
         //难度
-        draw_text_aligned_fix(ui, self.info.level
+        draw_text_aligned_opt(ui, self.info.level
             .split_whitespace()
             .next()
             .unwrap_or("?")
@@ -234,12 +220,12 @@ impl Scene for LoadingScene {
         );
         let (text_chart, text_illustration) = if self.config.chinese {("谱师", "画师")} else {("Chart", "Illustration")};
         let t = draw_text_aligned(ui, text_chart, main.x + main.w / 6.1, main.y + main.h * 1.32, (0., 0.), 0.253, WHITE);
-        draw_text_aligned_fix(ui, &self.charter, t.x, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
+        draw_text_aligned_opt(ui, &self.charter, t.x, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
         let w = 0.031;
         let t = draw_text_aligned(ui, text_illustration, t.x - w, t.y + w / 0.135 / 13. * 5., (0., 0.), 0.253, WHITE);
-        draw_text_aligned_fix(ui, &self.info.illustrator, t.x - 0.002, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
+        draw_text_aligned_opt(ui, &self.info.illustrator, t.x - 0.002, t.y + top / 22., (0., 0.), 0.415, WHITE, 0.58);
         let text_tip = self.info.tip.as_ref().unwrap();
-        draw_text_aligned_fix(ui, &text_tip, -0.895, top * 0.88, (0., 1.), 0.47, WHITE, 1.5);
+        draw_text_aligned_opt(ui, &text_tip, -0.895, top * 0.88, (0., 1.), 0.47, WHITE, 1.55);
         let text_loading = if self.config.chinese {"加载中..."} else {"Loading..."};
         let t = draw_text_aligned(ui, &text_loading, 0.865, top * 0.865, (1., 1.), 0.41, WHITE);
         let we = 0.19;
