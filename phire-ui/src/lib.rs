@@ -124,7 +124,7 @@ mod dir {
 }
 
 async fn the_main() -> Result<()> {
-    log::register();
+    log::register(tracing::level_filters::LevelFilter::INFO);
 
     init_assets();
 

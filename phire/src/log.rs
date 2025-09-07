@@ -2,7 +2,7 @@ use chrono::Utc;
 use colored::Colorize;
 use miniquad::{debug, error, info, trace, warn};
 use tracing::{field::Visit, Level, Subscriber};
-use tracing_subscriber::{prelude::*, Layer};
+use tracing_subscriber::{prelude::*, Layer, filter::LevelFilter};
 
 struct CustomLayer;
 
@@ -71,11 +71,11 @@ where
     }
 }
 
-pub fn register() {
-    tracing_subscriber::registry().with(CustomLayer).init();
+pub fn register(filter: LevelFilter) {
+    tracing_subscriber::registry().with(CustomLayer).with(filter).init();
 }
 
-pub fn register_with_colorize(override_colorize: bool) {
+pub fn register_with_colorize(filter: LevelFilter, override_colorize: bool) {
     colored::control::set_override(override_colorize);
-    tracing_subscriber::registry().with(CustomLayer).init();
+    tracing_subscriber::registry().with(CustomLayer).with(filter).init();
 }
