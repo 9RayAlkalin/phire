@@ -29,7 +29,7 @@ where
         let meta = event.metadata();
 
         #[cfg(not(target_os = "android"))]
-        let mut msg = format!("{:.6?} ", Utc::now()).bright_black().to_string()
+        let mut msg = format!("{} ", Utc::now().format("%Y-%m-%dT%H:%M:%S%.6fZ")).bright_black().to_string()
             + &match *meta.level() {
                 Level::TRACE => "TRACE".bright_black(),
                 Level::DEBUG => "DEBUG".magenta(),
