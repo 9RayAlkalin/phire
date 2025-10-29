@@ -103,6 +103,7 @@ impl Chart {
             .for_each(|note| {
                 note.judge = JudgeStatus::NotJudged;
                 note.protected = false;
+                note.object.set_time(0.0);
             });
         for line in &mut self.lines {
             line.cache.reset(&mut line.notes);
