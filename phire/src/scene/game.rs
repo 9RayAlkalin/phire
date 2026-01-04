@@ -652,6 +652,7 @@ impl GameScene {
             }
             let none_gt_1 = res.shake_play_mode_deque.iter().all(|(_, a)| *a <= 1.0);
             if none_gt_1 && !is_key_down(KeyCode::Enter) {
+                res.shake_play_paused = true;
                 if !tm.paused() {
                     tm.pause();
                     self.music.pause()?;
@@ -664,7 +665,8 @@ impl GameScene {
                     .color(semi_white(1.0))
                     .draw();
                 return Ok(());
-            } else if tm.paused() {
+            } else if tm.paused() && res.shake_play_paused {
+                res.shake_play_paused = false;
                 tm.resume();
                 self.music.play()?;
                 debug!("Shake Mode: Resumed");

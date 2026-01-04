@@ -486,6 +486,8 @@ pub struct Resource {
     pub model_stack: Vec<Matrix>,
     #[cfg(feature = "play")]
     pub shake_play_mode_deque: VecDeque<(f64, f32)>, // time, acceleration
+    #[cfg(feature = "play")]
+    pub shake_play_paused: bool,
 }
 
 impl Resource {
@@ -620,6 +622,8 @@ impl Resource {
             model_stack: vec![Matrix::identity()],
             #[cfg(feature = "play")]
             shake_play_mode_deque: VecDeque::new(),
+            #[cfg(feature = "play")]
+            shake_play_paused: false,
         })
     }
 
