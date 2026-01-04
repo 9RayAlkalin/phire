@@ -643,6 +643,33 @@ impl GameScene {
         for pos in &self.touch_points {
             ui.fill_circle(pos.0, pos.1, 0.04, Color { a: 0.4, ..BLUE });
         }
+        #[cfg(feature = "play")]
+        if res.config.shake_play_mode && matches!(self.state, State::Playing) {
+            let acc = GYRO.lock().unwrap().get_current_acceleration().abs();
+            res.shake_play_mode_deque.push_back((tm.real_time(), acc));
+            while res.shake_play_mode_deque.front().is_some_and(|it| tm.real_time() - it.0 > 1.0) {
+                res.shake_play_mode_deque.pop_front();
+            }
+            let none_gt_1 = res.shake_play_mode_deque.iter().all(|(_, a)| *a <= 1.0);
+            if none_gt_1 && !is_key_down(KeyCode::Enter) {
+                if !tm.paused() {
+                    tm.pause();
+                    self.music.pause()?;
+                    debug!("Shake Mode: Paused");
+                }
+                ui.text(tl!("shake-to-resume"))
+                    .pos(0., 0.)
+                    .anchor(0.5, 0.5)
+                    .size(1.0)
+                    .color(semi_white(1.0))
+                    .draw();
+                return Ok(());
+            } else if tm.paused() {
+                tm.resume();
+                self.music.play()?;
+                debug!("Shake Mode: Resumed");
+            }
+        }
         if tm.paused() {
             let o = if matches!(self.mode, GameMode::Exercise | GameMode::TweakOffset) { -0.3 } else { 0. };
             let s = 0.06;

@@ -101,4 +101,11 @@ impl Gyro {
             0.0
         }
     }
+
+    pub fn get_current_acceleration(&self) -> f32 {
+        GYROSCOPE_DATA
+            .lock()
+            .map(|data| data.angular_velocity.norm())
+            .unwrap_or(0.0)
+    }
 }
