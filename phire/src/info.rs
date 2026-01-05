@@ -87,7 +87,7 @@ impl Default for ChartInfo {
             note_uniform_scale: false,
             score_total: 1_000_000,
             hold_particle_interval_ratio: 1.0,
-            fold_animation: true,
+            fold_animation: false,
 
             created: None,
             updated: None,
