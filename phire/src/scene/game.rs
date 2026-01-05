@@ -1413,7 +1413,16 @@ impl Scene for GameScene {
         let angle = GYRO.lock().unwrap().get_angle(&res.config);
         set_camera( &Camera2D {
             zoom: chart_zoom,
-            viewport: chart_viewport,
+            viewport: chart_viewport.map(|(x, y, w, h)| {
+                if res.info.fold_animation && matches!(self.state, State::Starting) {
+                    let scale_x = (1. - (1. - time / Self::BEFORE_TIME).clamp(0., 1.).powi(3)).powf(2.0);
+                    let new_w = (w as f32 * scale_x).round() as i32;
+                    let dx = (w - new_w) / 2;
+                    (x + dx, y, new_w, h)
+                } else {
+                    (x, y, w, h)
+                }
+            }),
             rotation: angle.to_degrees(),
             ..Default::default()
         });
