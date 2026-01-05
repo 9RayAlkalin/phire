@@ -46,6 +46,7 @@ pub struct ChartInfo {
     pub note_uniform_scale: bool,
     pub score_total: u32,
     pub hold_particle_interval_ratio: f32,
+    pub fold_animation: bool,
 
     pub created: Option<DateTime<Utc>>,
     pub updated: Option<DateTime<Utc>>,
@@ -86,6 +87,7 @@ impl Default for ChartInfo {
             note_uniform_scale: false,
             score_total: 1_000_000,
             hold_particle_interval_ratio: 1.0,
+            fold_animation: true,
 
             created: None,
             updated: None,
