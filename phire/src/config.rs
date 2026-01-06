@@ -115,6 +115,8 @@ pub struct Config {
 
     pub play_start_time: f32,
     pub play_end_time: Option<f32>,
+    #[cfg(feature = "play")]
+    pub shake_play_mode: bool,
 }
 
 impl Default for Config {
@@ -195,6 +197,8 @@ impl Default for Config {
 
             play_start_time: 0.,
             play_end_time: None,
+            #[cfg(feature = "play")]
+            shake_play_mode: false,
         }
     }
 }

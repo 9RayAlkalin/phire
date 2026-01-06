@@ -28,7 +28,7 @@ use phire::{
     scene::{show_error, show_message},
     time::TimeManager,
     ui::{FontArc, TextPainter},
-    gyro::{GYRO, GyroData, GYROSCOPE_DATA},
+    gyro::{GYRO, GyroData},
     Main,
 };
 use scene::MainScene;
@@ -478,9 +478,6 @@ pub unsafe extern "C" fn Java_quad_1native_QuadNative_updateGyroScope(
         angular_velocity: Vector3::new(x, y, z),
         timestamp: Instant::now(),
     };
-    if let mut gyro_data = GYROSCOPE_DATA.lock().unwrap() {
-        *gyro_data = set_gyro_data;
-    }
     GYRO.lock().unwrap().update_gyroscope(set_gyro_data);
 }
 
