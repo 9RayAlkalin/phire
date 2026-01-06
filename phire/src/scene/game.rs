@@ -643,6 +643,35 @@ impl GameScene {
         for pos in &self.touch_points {
             ui.fill_circle(pos.0, pos.1, 0.04, Color { a: 0.4, ..BLUE });
         }
+        #[cfg(feature = "play")]
+        if res.config.shake_play_mode && matches!(self.state, State::Playing) {
+            let acc = GYRO.lock().unwrap().get_current_acceleration().abs();
+            res.shake_play_mode_deque.push_back((tm.real_time(), acc));
+            while res.shake_play_mode_deque.front().is_some_and(|it| tm.real_time() - it.0 > 1.0) {
+                res.shake_play_mode_deque.pop_front();
+            }
+            let none_gt_1 = res.shake_play_mode_deque.iter().all(|(_, a)| *a <= 1.0);
+            if none_gt_1 && !is_key_down(KeyCode::Enter) {
+                res.shake_play_paused = true;
+                if !tm.paused() {
+                    tm.pause();
+                    self.music.pause()?;
+                    debug!("Shake Mode: Paused");
+                }
+                ui.text(tl!("shake-to-resume"))
+                    .pos(0., 0.)
+                    .anchor(0.5, 0.5)
+                    .size(1.0)
+                    .color(semi_white(1.0))
+                    .draw();
+                return Ok(());
+            } else if tm.paused() && res.shake_play_paused {
+                res.shake_play_paused = false;
+                tm.resume();
+                self.music.play()?;
+                debug!("Shake Mode: Resumed");
+            }
+        }
         if tm.paused() {
             let o = if matches!(self.mode, GameMode::Exercise | GameMode::TweakOffset) { -0.3 } else { 0. };
             let s = 0.06;
@@ -1384,7 +1413,16 @@ impl Scene for GameScene {
         let angle = GYRO.lock().unwrap().get_angle(&res.config);
         set_camera( &Camera2D {
             zoom: chart_zoom,
-            viewport: chart_viewport,
+            viewport: chart_viewport.map(|(x, y, w, h)| {
+                if res.info.fold_animation && matches!(self.state, State::Starting) {
+                    let scale_x = (1. - (1. - time / Self::BEFORE_TIME).clamp(0., 1.).powi(3)).powf(2.0);
+                    let new_w = (w as f32 * scale_x).round() as i32;
+                    let dx = (w - new_w) / 2;
+                    (x + dx, y, new_w, h)
+                } else {
+                    (x, y, w, h)
+                }
+            }),
             rotation: angle.to_degrees(),
             ..Default::default()
         });

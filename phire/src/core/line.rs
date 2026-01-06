@@ -261,7 +261,7 @@ impl JudgeLine {
                     JudgeLineKind::Normal => {
                         if res.config.render_line {
                             let mut color = color.unwrap_or(res.judge_line_color);
-                            color.a = parse_alpha(color.a * alpha.max(0.0), res.alpha, 0.15, res.config.chart_debug_line > 0.);
+                            color.a = parse_alpha(color.a * alpha.max(0.0), if res.info.fold_animation { 1.0 } else { res.alpha }, 0.15, res.config.chart_debug_line > 0.);
                             if color.a == 0.0 {
                                 return;
                             }

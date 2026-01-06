@@ -11,3 +11,5 @@ ex-invalid-format = Invalid format
 ex-time-set = Time changed
 ex-time-start = Time started
 ex-time-end = Time stopped
+
+shake-to-resume = Shake to continue playing
