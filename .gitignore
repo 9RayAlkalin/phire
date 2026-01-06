@@ -5,8 +5,6 @@ inner.rs
 /http-cacache
 /prpr/build.rs
 /target
-/assets/charts
-/assets/texture
 /wbindgen
 /dist
 /conf.yml
@@ -28,10 +26,10 @@ inner.rs
 /build_ios.sh
 /build
 /*.ipa
-/phira.app
+/phire.app
 /Assets.xcassets
 /LaunchScreen.storyboard
-/phira.xcodeproj
+/phire.xcodeproj
 /dist
 /project.yml
 /prpr.scent
