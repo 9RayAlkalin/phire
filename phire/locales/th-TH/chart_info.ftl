@@ -25,3 +25,5 @@ tags = Tags
 tag-exists = Tag นี้มีอยู่แล้ว
 
 illegal-input = Illegal input
+
+fold-animation = แอนิเมชั่นพับ

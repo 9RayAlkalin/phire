@@ -25,3 +25,5 @@ tags = Thẻ
 tag-exists = Thẻ đã tồn tại
 
 illegal-input = Đầu vào bất hợp pháp
+
+fold-animation = Hoạt hình gấp

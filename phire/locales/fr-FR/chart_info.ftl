@@ -25,3 +25,5 @@ tags = Étiquettes
 tag-exists = L'étiquette existe déjà
 
 illegal-input = Entrée illégale
+
+fold-animation = Animation de pliage

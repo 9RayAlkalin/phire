@@ -25,3 +25,5 @@ tags = Теги
 tag-exists = Этот тег уже есть
 
 illegal-input = Неправильно введены данные
+
+fold-animation = Анимация складывания

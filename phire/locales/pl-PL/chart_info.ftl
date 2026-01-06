@@ -25,3 +25,5 @@ tags = Tagi
 tag-exists = Tag już istnieje
 
 illegal-input = Nieprawidłowe wprowadzenie
+
+fold-animation = Animacja składania

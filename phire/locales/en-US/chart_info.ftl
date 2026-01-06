@@ -29,3 +29,5 @@ tags = Tags
 tag-exists = Tag already exists
 
 illegal-input = Illegal input
+
+fold-animation = Fold animation

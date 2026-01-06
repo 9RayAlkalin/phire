@@ -26,3 +26,5 @@ tags = 標籤
 tag-exists = 標籤已存在
 
 illegal-input = 非法輸入
+
+fold-animation = 折疊動畫

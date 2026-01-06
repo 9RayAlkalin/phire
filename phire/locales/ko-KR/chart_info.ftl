@@ -25,3 +25,5 @@ tags = 태그
 tag-exists = 태그가 이미 존재합니다.
 
 illegal-input = 부적절한 입력입니다.
+
+fold-animation = 접기 애니메이션
