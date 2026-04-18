@@ -49,6 +49,9 @@ pub async fn load_res(name: &str) -> Vec<u8> {
     inner::resolve_data(bytes)
 }
 
+#[cfg(target_env = "ohos")]
+use napi_derive_ohos::napi;
+
 pub fn sync_data() {
     set_prefered_locale(get_data().language.as_ref().and_then(|it| it.parse().ok()));
     if get_data().language.is_none() {

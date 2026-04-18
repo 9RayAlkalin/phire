@@ -439,6 +439,15 @@ pub fn create_audio_manger(config: &Config) -> Result<AudioManager> {
             usage,
         }))
     }
+    #[cfg(target_env = "ohos")]
+    {
+        use sasa::backend::ohos::*;
+        AudioManager::new(OhosBackend::new(OhosSettings {
+            sample_rate: config.preferred_sample_rate.into(),
+            buffer_size: config.audio_buffer_size.or(Some(256)),
+            channels: 2,
+        }))
+    }
     #[cfg(not(target_os = "android"))]
     {
         use sasa::backend::cpal::*;
@@ -521,6 +530,8 @@ pub fn open_url(url: &str) -> Result<()> {
                 let url: ObjcId = msg_send![class!(NSURL), URLWithString: str_to_ns(url)];
                 let _: () = msg_send![application, openURL: url];
             }
+        } else if #[cfg(target_env = "ohos")] {
+            miniquad::native::call_request_callback(format!("{{\"action\":\"openurl\",\"payload\":\"{}\"}}", url));
         } else {
             open::that(url)?;
         }

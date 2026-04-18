@@ -218,6 +218,11 @@ impl Config {
         if let Some(flag) = self.autoplay {
             self.mods.set(Mods::AUTOPLAY, flag);
         }
+        #[cfg(target_env = "ohos")]
+        {
+            // Due to the fucking poor performance of the Maloon GPU, the sample count must be set to 1。 Perhaps Maloon 930 can be better?
+            self.sample_count = 1;
+        }
     }
 
     #[inline]

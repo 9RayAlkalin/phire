@@ -82,7 +82,9 @@ block = "0.1.6"
 [target.'cfg(target_os = "android")'.dependencies]
 ndk-context = "0.1"
 sasa = { git = "https://github.com/2278535805/sasa", default-features = false, features = ["oboe"] }
-[target.'cfg(not(target_os = "android"))'.dependencies]
+[target.'cfg(target_env = "ohos")'.dependencies]
+sasa = { git = "https://github.com/Mivik/sasa", default-features = false, features = ["ohos"] }
+[target.'cfg(not(any(target_os = "android", target_env = "ohos")))'.dependencies]
 sasa = { git = "https://github.com/2278535805/sasa" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
