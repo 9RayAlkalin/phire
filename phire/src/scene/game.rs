@@ -637,10 +637,11 @@ impl GameScene {
                 draw_text_aligned_opt_width(ui, &res.info.level, -lf, bt, (1., 1.), 0.505 * scale_ratio, Color { a: color.a * c.a, ..color }, 0.9 * aspect_ratio);
             });
         }
-        if !res.config.watermark.is_empty() {
-            draw_text_aligned_opt_width(ui, &res.config.watermark, 0., -top * 0.98 + (1. - p) * 0.4, (0.5, 1.), 0.25 * scale_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
+        {
+            let watermark = "此播放器仅用于 飞龙杯-FeiLoongCup 进行游戏竞技，严禁对外传播";
+            draw_text_aligned_opt_width(ui, watermark, 0., -top * 0.98 + (1. - p) * 0.4, (0.5, 1.), 0.25 * scale_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
             if res.config.chart_ratio <= 0.95 {
-                draw_text_aligned_opt_width(ui, &res.config.watermark, 0., (-top * 0.98 + (1. - p) * 0.4) / res.config.chart_ratio, (0.5, 1.), 0.25 * scale_ratio / res.config.chart_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
+                draw_text_aligned_opt_width(ui, watermark, 0., (-top * 0.98 + (1. - p) * 0.4) / res.config.chart_ratio, (0.5, 1.), 0.25 * scale_ratio / res.config.chart_ratio, semi_white(0.5 * c.a), 2.0 * aspect_ratio);
             }
         };
         let hw = 0.003;

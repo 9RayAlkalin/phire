@@ -50,7 +50,7 @@ item-speed = 速度
 item-note-size = 音符大小
 item-render-extra = 显示额外内容 (着色器/特效)
 
-item-chart-debug-line = 谱面调试 - 判定线
+item-chart-debug-line = 谱面调试
 item-chart-debug-line-sub = 显示判定线属性
 item-chart-debug-note = 谱面调试 - 音符
 item-chart-debug-note-sub = 显示音符属性
@@ -82,3 +82,4 @@ about-content =
   Phire v{ $version }
 
   Phire 是一款玩法基于 Phigros 的非商业社区音乐游戏，使用 Rust 开发。
+  此播放器仅用于 飞龙杯-FeiLoongCup 进行游戏竞技，严禁对外传播

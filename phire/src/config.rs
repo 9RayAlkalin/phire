@@ -175,7 +175,7 @@ impl Default for Config {
             volume_music: 1.0,
             volume_sfx: 0.0,
             volume_bgm: 1.0,
-            watermark: "".to_string(),
+            watermark: "此播放器仅用于 飞龙杯-FeiLoongCup 进行游戏竞技，严禁对外传播".to_string(),
             roman: false,
             chinese: false,
             combo: "RECALL".to_string(),

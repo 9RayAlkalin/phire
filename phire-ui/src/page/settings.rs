@@ -872,45 +872,8 @@ impl OtherList {
             self.chart_debug_line_slider.render(ui, rr, t,c, config.chart_debug_line, format!("{:.2}", config.chart_debug_line));
         }
         item! {
-            render_title(ui, c, tl!("item-chart-debug-note"), Some(tl!("item-chart-debug-note-sub")));
-            self.chart_debug_note_slider.render(ui, rr, t,c, config.chart_debug_note, format!("{:.2}", config.chart_debug_note));
-        }
-        item! {
             render_title(ui, c, tl!("item-touch-debug"), Some(tl!("item-touch-debug-sub")));
             render_switch(ui, rr, t, c, &mut self.touch_debug_btn, config.touch_debug);
-        }
-        item! {
-            render_title(ui, c, tl!("item-chart_ratio"), None);
-            self.chart_ratio_slider.render(ui, rr, t,c, config.chart_ratio, format!("{:.2}", config.chart_ratio));
-        }
-        item! {
-            render_title(ui, c, tl!("item-fade"), Some(tl!("item-fade-sub")));
-            self.fade_slider.render(ui, rr, t,c, config.fade, format!("{:.2}", config.fade));
-        }
-        item! {
-            render_title(ui, c, tl!("item-watermark"), None);
-            self.watermark.render_text(ui, rr, t, c.a, &config.watermark, 0.4, false);
-        }
-        item! {
-            render_title(ui, c, tl!("item-combo"), None);
-            self.combo_btn.render_text(ui, rr, t, c.a, &config.combo, 0.4, false);
-        }
-        item! {
-            render_title(ui, c, tl!("item-roman"), None);
-            render_switch(ui, rr, t, c, &mut self.roman_btn, config.roman);
-        }
-        item! {
-            render_title(ui, c, tl!("item-chinese"), None);
-            render_switch(ui, rr, t, c, &mut self.chinese_btn, config.chinese);
-        }
-        item! {
-            render_title(ui, c, tl!("item-rotation-mode"), None);
-            render_switch(ui, rr, t, c, &mut self.rotation_mode, config.rotation_mode);
-        }
-        #[cfg(feature = "play")]
-        item! {
-            render_title(ui, c, tl!("item-shake-play-mode"), None);
-            render_switch(ui, rr, t, c, &mut self.shake_play_mode_btn, config.shake_play_mode);
         }
         #[cfg(feature = "play")]
         item! {
