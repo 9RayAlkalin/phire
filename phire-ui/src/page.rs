@@ -1,4 +1,6 @@
 mod event;
+mod flc;
+pub use flc::FlcPage;
 pub use event::EventPage;
 
 mod home;

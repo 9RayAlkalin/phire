@@ -83,3 +83,4 @@ about-content =
   Phira v{ $version }
 
   Phira is a non-commercial community-driven rhythm game, inspired by Phigros, developed with Rust.
+  此播放器仅用于 飞龙杯-FeiLoongCup 进行游戏竞技，严禁对外传播
