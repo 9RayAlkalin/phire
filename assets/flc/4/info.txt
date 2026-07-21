@@ -1,0 +1,10 @@
+#
+Name: Aegleseeker
+Path: 52143484
+Song: 52143484.ogg
+Picture: 52143484.png
+Chart: 52143484.json
+Level: CRAZY  Lv.10
+Composer: Silentroom vs Frums
+Charter: 在那束光中，我得到了救赎
+Illustrator: シエラ

@@ -285,7 +285,7 @@ fn info_from_kv<'a>(it: impl Iterator<Item = (&'a str, String)>, csv: bool) -> R
     Ok(info)
 }
 
-fn info_from_txt(text: &str) -> Result<ChartInfo> {
+pub fn info_from_txt(text: &str) -> Result<ChartInfo> {
     // 跳过空行
     let mut it = text.lines().filter(|it| {!it.is_empty()}).peekable();
     let first = it.next();

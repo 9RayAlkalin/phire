@@ -1,0 +1,10 @@
+#
+Name: Leave All Behind
+Path: 66032298
+Song: 66032298.ogg
+Picture: 66032298.png
+Chart: 66032298.json
+Level: HARD  Lv.8+
+Composer: rider
+Charter: 一只老G鸭
+Illustrator: 笔记RE

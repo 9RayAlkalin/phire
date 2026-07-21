@@ -46,7 +46,11 @@ thread_local! {
 
 pub fn fs_from_path(path: &str) -> Result<Box<dyn FileSystem + Send + Sync + 'static>> {
     if let Some(name) = path.strip_prefix(':') {
-        fs::fs_from_assets(format!("charts/{name}/"))
+        if let Some(flc_name) = name.strip_prefix("flc/") {
+            fs::fs_from_file(Path::new(&format!("assets/flc/{flc_name}")))
+        } else {
+            fs::fs_from_assets(format!("charts/{name}/"))
+        }
     } else {
         fs::fs_from_file(Path::new(&format!("{}/{path}", dir::charts()?)))
     }

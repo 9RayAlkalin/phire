@@ -1,0 +1,32 @@
+id: null
+uploader: null
+name: Grievous Lady
+difficulty: 9.0
+level: HARD  Lv.9
+charter: 迷路深層
+composer: Team Grimoire vs Laur
+illustrator: シエラ
+chart: 726558.json
+format: null
+music: 726558.ogg
+illustration: 726558.png
+unlockVideo: null
+previewStart: 0.0
+previewEnd: null
+aspectRatio: 1.7777778
+forceAspectRatio: false
+backgroundDim: 0.1
+lineLength: 6.0
+offset: 0.0
+tip: null
+tags: []
+intro: ''
+holdPartialCover: false
+negativeLengthHold: true
+noteUniformScale: false
+scoreTotal: 1000000
+holdParticleIntervalRatio: 1.0
+foldAnimation: false
+created: null
+updated: null
+chartUpdated: null

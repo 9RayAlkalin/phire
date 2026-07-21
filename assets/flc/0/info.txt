@@ -1,0 +1,10 @@
+#
+Name: テリトリーバトル
+Path: 78857910
+Song: 78857910.ogg
+Picture: 78857910.png
+Chart: 78857910.json
+Level: HARD  Lv.7
+Composer: ツユ
+Charter: _0419
+Illustrator: SEGA (V17AMax modified)

@@ -274,7 +274,7 @@ impl Page for LibraryPage {
         }
         {
             if self.btn_flc.touch(touch, t) {
-                self.next_page = Some(NextPage::Overlay(Box::new(FlcPage::new())));
+                self.next_page = Some(NextPage::Overlay(Box::new(FlcPage::new(Arc::clone(&self.icons)))));
                 return Ok(true);
             }
             if self.import_btn.touch(touch, t) {

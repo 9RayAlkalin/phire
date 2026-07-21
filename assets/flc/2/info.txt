@@ -1,0 +1,10 @@
+#
+Name: Grievous Lady
+Path: 726558
+Song: 726558.ogg
+Picture: 726558.png
+Chart: 726558.json
+Level: HARD  Lv.9
+Composer: Team Grimoire vs Laur
+Charter: 迷路深層
+Illustrator: シエラ

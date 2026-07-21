@@ -1,0 +1,10 @@
+#
+Name: What's up Pop
+Path: 92197967
+Song: 92197967.ogg
+Picture: 92197967.png
+Chart: 92197967.json
+Level: HARD  Lv.9+
+Composer: Capchii (feat.初音ミク)
+Charter: Waht's up?LittleG!
+Illustrator: みたう

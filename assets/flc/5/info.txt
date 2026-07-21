@@ -1,0 +1,10 @@
+#
+Name: Pentiment
+Path: 17452438
+Song: 17452438.ogg
+Picture: 17452438.png
+Chart: 17452438.json
+Level: CRAZY  Lv.10+
+Composer: Nothing But Equirem With Mueso
+Charter: Nothing But LittleG
+Illustrator: 村カルキ

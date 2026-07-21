@@ -1,0 +1,32 @@
+id: null
+uploader: null
+name: Leave All Behind
+difficulty: 1.0
+level: HARD  Lv.8+
+charter: 一只老G鸭
+composer: rider
+illustrator: 笔记RE
+chart: 66032298.json
+format: null
+music: 66032298.ogg
+illustration: 66032298.png
+unlockVideo: null
+previewStart: 0.0
+previewEnd: null
+aspectRatio: 1.7777778
+forceAspectRatio: false
+backgroundDim: 0.1
+lineLength: 6.0
+offset: 0.0
+tip: null
+tags: []
+intro: ''
+holdPartialCover: false
+negativeLengthHold: true
+noteUniformScale: false
+scoreTotal: 1000000
+holdParticleIntervalRatio: 1.0
+foldAnimation: false
+created: null
+updated: null
+chartUpdated: null
