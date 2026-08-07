@@ -3,7 +3,7 @@ members = [
 	"phire",
 	"prpr-avc",
 	"prpr-pbc",
-	"phire-ui",
+	"phire_ui",
 	"phire-main",
 ]
 resolver = "2"
