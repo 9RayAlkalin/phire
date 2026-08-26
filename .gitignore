@@ -38,6 +38,11 @@ inner.rs
 /prpr.scent
 /.cargo
 
+# OHOS
+/phire-ui/dist/
+/*/target
+/build_ohos.sh
+
 # Test
 
 /log*
