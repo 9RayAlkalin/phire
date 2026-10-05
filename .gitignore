@@ -39,7 +39,7 @@ inner.rs
 /.cargo
 
 # OHOS
-/phire-ui/dist/
+/*/dist/
 /*/target
 /build_ohos.sh
 

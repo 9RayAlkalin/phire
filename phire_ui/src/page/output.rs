@@ -16,7 +16,7 @@ use sasa::{AudioManager, Renderer};
 use phire::config::WasapiTiming;
 #[cfg(target_os = "windows")]
 use sasa::BackendStreamInfo::Wasapi;
-#[cfg(not(any(target_os = "android", target_os = "windows")))]
+#[cfg(not(any(target_os = "android", target_os = "windows", target_env = "ohos")))]
 use sasa::BackendStreamInfo::Cpal;
 #[cfg(target_os = "android")]
 use sasa::{BackendStreamInfo::Oboe, backend::oboe::{PerformanceMode, SharingMode}};
@@ -511,7 +511,7 @@ impl Page for OutputPage {
                     .color(Color::new(1., 1., 1., 0.7 * c.a))
                     .draw();
 
-                let mut warn_str = Vec::new();
+                let mut warn_str: Vec<std::borrow::Cow<str>> = Vec::new();
                 match audio.stream_info() {
                     #[cfg(target_os = "android")]
                     Oboe(info) => {
@@ -558,7 +558,7 @@ impl Page for OutputPage {
                             }
                         }
                     },
-                    #[cfg(not(any(target_os = "android", target_os = "windows")))]
+                    #[cfg(not(any(target_os = "android", target_os = "windows", target_env = "ohos")))]
                     Cpal(info) => {
                         if let Some(settings_buffer_size) = info.settings.buffer_size {
                             if let Some(actual_frames_per_callback) = info.actual_frames_per_callback {

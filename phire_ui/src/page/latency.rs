@@ -736,7 +736,15 @@ fn create_recorder(
         recorder.add_recorder(tap_rec)?;
         Ok(recorder)
     }
-    #[cfg(not(any(target_os = "android", target_os = "windows")))]
+    #[cfg(target_env = "ohos")]
+    {
+        use sasa::backend::ohos::*;
+        let mut recorder = AudioRecorder::new(OhosRecorderBackend::new(OhosSettings::default()))?;
+        let tap_rec = TapRecorder::new(buffer, position, sample_rate);
+        recorder.add_recorder(tap_rec)?;
+        Ok(recorder)
+    }
+    #[cfg(not(any(target_os = "android", target_os = "windows", target_env = "ohos")))]
     {
         use sasa::backend::cpal::*;
         let mut recorder = AudioRecorder::new(CpalRecorderBackend::new(CpalSettings::default()))?;

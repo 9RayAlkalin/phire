@@ -15,12 +15,19 @@ pub static CLIENT_TOKEN: Lazy<ArcSwap<Option<String>>> = Lazy::new(|| ArcSwap::f
 
 static CLIENT: Lazy<ArcSwap<reqwest::Client>> = Lazy::new(|| ArcSwap::from_pointee(basic_client_builder().build().unwrap()));
 
+#[cfg(not(target_arch = "wasm32"))]
+static RUSTLS_PROVIDER_INIT: std::sync::Once = std::sync::Once::new();
+
 pub struct Client;
 
 // const API_URL: &str = "http://localhost:2924";
 const API_URL: &str = "https://api.phizone.cn";
 
 pub fn basic_client_builder() -> ClientBuilder {
+    #[cfg(not(target_arch = "wasm32"))]
+    RUSTLS_PROVIDER_INIT.call_once(|| {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    });
     let mut builder = reqwest::ClientBuilder::new();
     if get_data().accept_invalid_cert {
         builder = builder.danger_accept_invalid_certs(true);

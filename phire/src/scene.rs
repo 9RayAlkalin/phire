@@ -318,7 +318,7 @@ pub fn request_file(id: impl Into<String>) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn request_save_file(id: impl Into<String>, name: &str) {
+pub fn request_save_file(id: impl Into<String>, #[allow(unused_variables)] name: &str) {
     *CHOSEN_FILE.lock().unwrap() = (Some(id.into()), None);
     cfg_if! {
         if #[cfg(target_os = "android")] {
@@ -331,6 +331,11 @@ pub fn request_save_file(id: impl Into<String>, name: &str) {
                 let jname = (**env).NewStringUTF.unwrap()(env, name.as_ptr());
                 (**env).CallVoidMethod.unwrap()(env, ctx, method, jname);
             }
+        } else if #[cfg(target_env = "ohos")] {
+            miniquad::native::call_request_callback(
+                r#"{"action":"chooseFile","isPhoto":false}"#.to_string(),
+            );
+        } else if #[cfg(target_os = "ios")] {
         } else {
             CHOSEN_FILE.lock().unwrap().1 = rfd::FileDialog::new().set_file_name(name).save_file().map(|it| it.display().to_string());
         }

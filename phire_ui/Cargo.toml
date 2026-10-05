@@ -35,7 +35,8 @@ pollster = { workspace = true }
 phire = { workspace = true, features = ["log", "video"] }
 rand = { workspace = true }
 regex = { workspace = true }
-reqwest = { workspace = true, features = ["json", "stream", "gzip", "charset", "http2", "system-proxy", "native-tls", "query"] }
+reqwest = { workspace = true, features = ["json", "stream", "gzip", "charset", "http2", "system-proxy", "rustls-no-provider", "query"] }
+rustls = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -59,7 +60,6 @@ zeroize = { workspace = true }
 ndk-sys = { workspace = true }
 ndk-context = { workspace = true }
 sasa = { workspace = true, default-features = false, features = ["oboe"] }
-openssl = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 sasa = { workspace = true, default-features = false, features = ["wasapi"] }

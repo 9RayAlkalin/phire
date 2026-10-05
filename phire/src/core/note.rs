@@ -159,7 +159,11 @@ fn draw_tex_pts(res: &Resource, texture: &Texture2D, order: i8, mut p: [Point; 4
             (
                 order,
                 match unsafe { get_internal_gl().quad_context.texture_raw_id(texture.raw_miniquad_id()) }
-                { macroquad::miniquad::RawId::OpenGl(id) => id }
+                {
+                    macroquad::miniquad::RawId::OpenGl(id) => id,
+                    #[cfg(target_vendor = "apple")]
+                    _ => todo!(),
+                }
             ),
             vertices
         );
